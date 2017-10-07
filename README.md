@@ -25,6 +25,18 @@ be required. If you check out the [Releases](https://github.com/velukh/MplusLedg
 file of the current version. You can then copy/paste this folder into your Addons directory and you should see MplusLedger
 in your list of addons.
 
+## Problems or Bugs
+
+If you encounter any problems or bugs please submit an [issue to this repository](https://github.com/velukh/MplusLedger/issues) 
+or if you do not have a GitHub profile you may also submit [an issue without a GitHub account](https://gitreports.com/issue/velukh/MplusLedger).
+
+Please note that it is highly recommended that you use the GitHub issues directly as this is the only officially supported 
+means to submit problems or suggestions and receive feedback from the developer. Additionally you will be able to sumibt 
+iamges with your problem and that is highly recommended. The Git Reports link is merely a convenience to post issues on 
+GitHub; if this link becomes abused or mistreated I may deactivate anonymous issue reporting altogether.  
+
+**Any issue posted on any other service will not receive feedback from the developer.**
+
 ## TODOS
 
 There are many things I'd like to add to MplusLedger and plan to do so as time permits. Below is the list of items that 
@@ -32,4 +44,5 @@ we'd like to add to the addon over time.
 
 - [ ] Drastically improve the UI to improve experience and amount of information displayed
 - [ ] Add ability to store a player and party's gear set, talents, and buffs when a M+ starts
+- [ ] Provide ability to export data as a JSON object
 - [ ] Add a supplemental website to upload and backup your MplusLedger data
