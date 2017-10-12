@@ -23,6 +23,7 @@ MplusLedger.Events = {
 }
 
 MplusLedger.Wow = {
+  DefaultFont = "GameFontNormal",
 	InspectDistance = 1,
 	Equipment = {
 		HeadSlot = 1,
@@ -66,11 +67,11 @@ function MplusLedger:OnEnable()
 	self:SecureHook("ResetInstances", ResetMythicPlusRuns)
 end
 
-function MplusLedger:ToggleFrame()
+function MplusLedger:ToggleFrame(tabToShow)
 	if MplusLedger.ShowingMainFrame then
 		MplusLedger:SendMessage(MplusLedger.Events.HideMainFrame)
 	else
-		MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame)
+		MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame, tabToShow)
 	end
 end
 
@@ -103,7 +104,7 @@ function MplusLedger:StartMythicPlus(challengeMapId)
 		if UnitExists(unitId) then
 			local guid = UnitGUID(unitId)
 			local player, realm = UnitName(unitId)
-			local class = UnitClass(unitId)
+			local class, classToken = UnitClass(unitId)
 			local race = UnitRace(unitId)
 			local genderId = UnitSex(unitId)
 
@@ -115,6 +116,7 @@ function MplusLedger:StartMythicPlus(challengeMapId)
 				race = race,
 				genderId = genderId,
 				class = class,
+        classToken = classToken,
 				deathCount = 0
 			})
 		end
@@ -203,14 +205,19 @@ function MplusLedger:IsRunningMythicPlus()
 	return self.db.char.currentDungeon ~= nil
 end
 
+local function YellowText(text)
+    return "|cFFFFFF00" .. text .. "|r"
+end
+
 function MplusLedger:ShowChatCommands()
 	local commands = {
 		help = "Show this list of commands.",
 		reset = "Force the reset of your currently running dungeon.",
-		show = "Show your Mythic+ Ledger."
+		show = "Show the current dungeon for your Mythic+ Ledger",
+    history = "Show the history for your Mythic+ Ledger"
 	}
 
-	print("Mplus Ledger v" .. MplusLedger.Version)
+	print(YellowText("Mplus Ledger v" .. MplusLedger.Version))
 	for command, description in pairs(commands) do
 		print("/mplus " .. command .. " - " .. description)
 	end
