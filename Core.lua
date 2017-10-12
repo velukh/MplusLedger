@@ -1,12 +1,14 @@
--- MplusLedger
---
--- Addon to keep long-term track of a player's Mythic+ run so they may analyze how they're doing
--- for a given spec, dungeon, affixes, level and party composition
---
--- @copyright Velukh 2017
+--[[
+MplusLedger
+
+A WoW addon to keep long-term track of a player's Mythic+ runs so they may analyze how they're doing for 
+a given spec, dungeon, affixes, level, and party composition.
+
+@copyright Velukh 2017
+--]]
 MplusLedger = LibStub("AceAddon-3.0"):NewAddon(
-	"MplusLedger", 
-	"AceConsole-3.0", 
+	"MplusLedger",
+	"AceConsole-3.0",
 	"AceEvent-3.0",
 	"AceHook-3.0",
 	"AceTimer-3.0"
@@ -23,25 +25,6 @@ MplusLedger.Events = {
 }
 
 MplusLedger.Wow = {
-  DefaultFont = "GameFontNormal",
-	InspectDistance = 1,
-	Equipment = {
-		HeadSlot = 1,
-		NeckSlot = 2,
-		ShoulderSlot = 3,
-		ChestSlot = 5,
-		WaistSlot = 6,
-		LegSlot = 7,
-		FeetSlot = 8,
-		WristSlot = 9,
-		HandSlot = 10,
-		Finger1Slot = 11,
-		Finger2Slot = 12,
-		Trinket1Slot = 13,
-		Trinket2Slot = 14,
-		BackSlot = 15,
-		MainhandSlot = 16
-	},
 	SpellIds = {
 		SurrenderedSoul = 212570
 	}

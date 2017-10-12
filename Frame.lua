@@ -147,7 +147,7 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
 	MplusLedger.ShowingMainFrame = true
 	frame = AceGUI:Create("Frame")
 	frame:SetTitle(MplusLedger.Title)
-  frame:SetStatusText("v" .. MplusLedger.Version)
+	frame:SetStatus("v" .. MplusLedger.Version)
 	frame:SetCallback("OnClose", function(widget) 
 		HideFrame(widget)	
 	end)
