@@ -99,7 +99,7 @@ function MplusLedger:StartMythicPlus(challengeMapId)
 				race = race,
 				genderId = genderId,
 				class = class,
-        classToken = classToken,
+				classToken = classToken,
 				deathCount = 0
 			})
 		end
