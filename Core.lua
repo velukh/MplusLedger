@@ -15,7 +15,7 @@ MplusLedger = LibStub("AceAddon-3.0"):NewAddon(
 )
 
 MplusLedger.Title = "MplusLedger"
-MplusLedger.Version = "0.1.0"
+MplusLedger.Version = "0.2.0"
 MplusLedger.ShowingMainFrame = false
 
 MplusLedger.Events = {

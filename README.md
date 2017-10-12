@@ -1,6 +1,7 @@
 # MplusLedger
 
 <img src="https://img.shields.io/badge/wow-7.3-brightgreen.svg" alt="Up to date with WoW 7.3 Legion" />
+<img src="https://img.shields.io/badge/version-0.2.0-blue.svg" alt="Addon on version 0.2.0" />
 
 > This addon is currently under active development and is in Alpha stage testing. You will likely encounter bugs, 
 > particularly in the UI as it is has not been fully designed or implemented. If you install this addon in its 
@@ -41,5 +42,6 @@ I'd like to add to the addon over time.
 - [ ] Drastically improve the UI to improve experience and amount of information displayed
 - [ ] Add ability to store a player and party's gear set, talents, and buffs when a M+ starts
 - [ ] Add ability to rate a dungeon run or individual player
+- [ ] Add ability to sort, filter and/or search over your MplusLedger history
 - [ ] Provide ability to export data as a JSON object
 - [ ] Add a supplemental website to upload and backup your MplusLedger data
