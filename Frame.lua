@@ -10,9 +10,9 @@ local OneIndent = "     "
 local TwoIndent = OneIndent .. OneIndent
 
 local HideFrame = function(widget)
-	AceGUI:Release(widget) 
-	MplusLedger.ShowingMainFrame = false
-	selectedTab = nil
+  AceGUI:Release(widget) 
+  MplusLedger.ShowingMainFrame = false
+  selectedTab = nil
 end
 
 local function ClassColorText(text, classToken)
@@ -48,7 +48,7 @@ local function AddPartyMemberLabelsToContainer(container, partyMember)
 end
 
 local function AddDungeonLabelsToContainer(container, dungeon)
-	local name = C_ChallengeMode.GetMapInfo(dungeon.challengeMapId)
+  local name = C_ChallengeMode.GetMapInfo(dungeon.challengeMapId)
   local nameLabel = AceGUI:Create("Label")
   nameLabel:SetText(name)
   nameLabel:SetFont(font, fontSize * 2.25, flags)
@@ -70,71 +70,71 @@ local function AddDungeonLabelsToContainer(container, dungeon)
   
   container:AddChild(dateLabel)
 
-	local affixInfo
-	for _, affixId in ipairs(dungeon.affixes) do
-		local name, description = C_ChallengeMode.GetAffixInfo(affixId)
-		if not affixInfo then
-			affixInfo = name
-		else
-			affixInfo = affixInfo .. ", " .. name
-		end
-	end
+  local affixInfo
+  for _, affixId in ipairs(dungeon.affixes) do
+    local name, description = C_ChallengeMode.GetAffixInfo(affixId)
+    if not affixInfo then
+      affixInfo = name
+    else
+      affixInfo = affixInfo .. ", " .. name
+    end
+  end
 
-	if not affixInfo then
-		affixInfo = "No affixes"
-	end
+  if not affixInfo then
+    affixInfo = "No affixes"
+  end
 
-	local affixesLabel = AceGUI:Create("Label")
-	affixesLabel:SetText(affixInfo)
+  local affixesLabel = AceGUI:Create("Label")
+  affixesLabel:SetText(affixInfo)
   affixesLabel:SetFont(font, fontSize * 0.8, flags)
   affixesLabel:SetRelativeWidth(0.2)
-	container:AddChild(affixesLabel)
+  container:AddChild(affixesLabel)
 
-	for _, partyMember in ipairs(dungeon.party) do
-		AddPartyMemberLabelsToContainer(container, partyMember)
-	end
+  for _, partyMember in ipairs(dungeon.party) do
+    AddPartyMemberLabelsToContainer(container, partyMember)
+  end
 end
 
 local function DrawCurrentDungeonTab(container)
-	if MplusLedger:IsRunningMythicPlus() then
-		local currentDungeon = MplusLedger:CurrentDungeon()		
-		local scrollFrame = AceGUI:Create("ScrollFrame")
-		scrollFrame:SetLayout("Flow")
-		container:AddChild(scrollFrame)
-		AddDungeonLabelsToContainer(scrollFrame, currentDungeon)
-	else
-		local label = AceGUI:Create("Label")
-		label:SetText("No Mythic+ is currently being ran. Please check again after you've started a M+")
-		label:SetFullWidth(true)
-		container:AddChild(label)
-	end
+  if MplusLedger:IsRunningMythicPlus() then
+    local currentDungeon = MplusLedger:CurrentDungeon()    
+    local scrollFrame = AceGUI:Create("ScrollFrame")
+    scrollFrame:SetLayout("Flow")
+    container:AddChild(scrollFrame)
+    AddDungeonLabelsToContainer(scrollFrame, currentDungeon)
+  else
+    local label = AceGUI:Create("Label")
+    label:SetText("No Mythic+ is currently being ran. Please check again after you've started a M+")
+    label:SetFullWidth(true)
+    container:AddChild(label)
+  end
 end
 
 local function DrawHistoryTab(container)
-	local scrollFrame = AceGUI:Create("ScrollFrame")
-	scrollFrame:SetLayout("Flow")
-	container:AddChild(scrollFrame)
-	for _, dungeon in ipairs(MplusLedger:FinishedDungeons()) do
+  local scrollFrame = AceGUI:Create("ScrollFrame")
+  scrollFrame:SetLayout("Flow")
+  container:AddChild(scrollFrame)
+  for _, dungeon in ipairs(MplusLedger:FinishedDungeons()) do
     local partyGroup = AceGUI:Create("InlineGroup")
     partyGroup:SetLayout("Flow")
     partyGroup:SetRelativeWidth(1.0)
     scrollFrame:AddChild(partyGroup)
-		AddDungeonLabelsToContainer(partyGroup, dungeon)
-	end
+    AddDungeonLabelsToContainer(partyGroup, dungeon)
+  end
 end
 
 local function SelectedTab(container, event, tab)
-	container:ReleaseChildren()
-	selectedTab = tab
-	if tab == "current_dungeon" then
-		DrawCurrentDungeonTab(container)
-	elseif tab == "history" then
-		DrawHistoryTab(container)
-	end
+  container:ReleaseChildren()
+  selectedTab = tab
+  if tab == "current_dungeon" then
+    DrawCurrentDungeonTab(container)
+  elseif tab == "history" then
+    DrawHistoryTab(container)
+  end
 end
 
 MplusLedger:RegisterMessage(MplusLedger.Events.HideMainFrame, function()
-	HideFrame(frame)
+  HideFrame(frame)
 end)
 
 MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToShow)
@@ -144,31 +144,31 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
     error("A tab that does not exist, " .. tabToShow .. ", was asked to be shown. If you have not modified this addon's source code please submit an issue describing your problem")
   end
   
-	MplusLedger.ShowingMainFrame = true
-	frame = AceGUI:Create("Frame")
-	frame:SetTitle(MplusLedger.Title)
-	frame:SetStatus("v" .. MplusLedger.Version)
-	frame:SetCallback("OnClose", function(widget) 
-		HideFrame(widget)	
-	end)
-	frame:SetLayout("Fill")
+  MplusLedger.ShowingMainFrame = true
+  frame = AceGUI:Create("Frame")
+  frame:SetTitle(MplusLedger.Title)
+  frame:SetStatus("v" .. MplusLedger.Version)
+  frame:SetCallback("OnClose", function(widget) 
+    HideFrame(widget)  
+  end)
+  frame:SetLayout("Fill")
 
-	tabs = AceGUI:Create("TabGroup")
-	tabs:SetLayout("Fill")
+  tabs = AceGUI:Create("TabGroup")
+  tabs:SetLayout("Fill")
 
-	tabs:SetTabs({
-		{
-			text = "Current Dungeon",
-			value = "current_dungeon"
-		},
-		{
-			text = "History",
-			value = "history"
-		}
-	})
+  tabs:SetTabs({
+    {
+      text = "Current Dungeon",
+      value = "current_dungeon"
+    },
+    {
+      text = "History",
+      value = "history"
+    }
+  })
 
-	tabs:SetCallback("OnGroupSelected", SelectedTab)
-	tabs:SelectTab(tabToShow)
+  tabs:SetCallback("OnGroupSelected", SelectedTab)
+  tabs:SelectTab(tabToShow)
 
-	frame:AddChild(tabs)
+  frame:AddChild(tabs)
 end)
