@@ -4,6 +4,7 @@
 
 - Add amount of time the run took as well as when the run ended to the UI for each dungeon
 - Determine whether or not the dungeon was completed +1, +2 or +3 and display accordingly
+- Disable ability to resize the main window to ensure UI consistency
 
 ## v0.2.0
 
