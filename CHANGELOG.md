@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.1
+
+- [BUGFIX] Fixes the Current Dungeon tab to display properly by properly handling endedAt being nil
+
 ## v0.3.0
 
 - Add amount of time the run took as well as when the run ended to the UI for each dungeon

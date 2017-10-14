@@ -106,48 +106,50 @@ local function AddDungeonLabelsToContainer(container, dungeon)
 
   container:AddChild(affixesLabel)
 
-  local endDateLabel = AceGUI:Create("Label")
-  endDateLabel:SetText("Ended on " .. date("%c", dungeon.endedAt))
-  endDateLabel:SetFont(font, fontSize * 1.1, flags) 
-  endDateLabel:SetRelativeWidth(0.8)
+  if dungeon.state ~= "running" then
+    local endDateLabel = AceGUI:Create("Label")
+    endDateLabel:SetText("Ended on " .. date("%c", dungeon.endedAt))
+    endDateLabel:SetFont(font, fontSize * 1.1, flags) 
+    endDateLabel:SetRelativeWidth(0.8)
 
-  container:AddChild(endDateLabel)
+    container:AddChild(endDateLabel)
 
-  local keyMod
-  local totalRuntime = difftime(dungeon.endedAt, dungeon.startedAt)
+    local keyMod
+    local totalRuntime = difftime(dungeon.endedAt, dungeon.startedAt)
 
-  if dungeon.state == "failed" then
-    keyMod = "-1"
-  else
-    local plusTwo = timeLimit * 0.8
-    local plusThree = timeLimit * 0.6
-    
-    if totalRuntime <= plusThree then
-      keyMod = "+3"
-    elseif totalRuntime <= plusTwo then
-      keyMod = "+2"
-    elseif totalRuntime <= timeLimit then
-      keyMod = "+1"
-    else
+    if dungeon.state == "failed" then
       keyMod = "-1"
+    else
+      local plusTwo = timeLimit * 0.8
+      local plusThree = timeLimit * 0.6
+      
+      if totalRuntime <= plusThree then
+        keyMod = "+3"
+      elseif totalRuntime <= plusTwo then
+        keyMod = "+2"
+      elseif totalRuntime <= timeLimit then
+        keyMod = "+1"
+      else
+        keyMod = "-1"
+      end
     end
-  end
 
-  local keyModLabel = AceGUI:Create("Label")
-  keyModLabel:SetText(keyMod)
-  keyModLabel:SetRelativeWidth(0.2)
-  keyModLabel:SetFont(font, fontSize * 1.5, flags)
-  keyModLabel:SetJustifyH("CENTER")
+    local keyModLabel = AceGUI:Create("Label")
+    keyModLabel:SetText(keyMod)
+    keyModLabel:SetRelativeWidth(0.2)
+    keyModLabel:SetFont(font, fontSize * 1.5, flags)
+    keyModLabel:SetJustifyH("CENTER")
 
-  container:AddChild(keyModLabel)
+    container:AddChild(keyModLabel)
+
+    local totalRunTimeLabel = AceGUI:Create("Label") 
+    totalRunTimeLabel:SetText("Total run time: " .. SecondsToClock(totalRuntime))
+    totalRunTimeLabel:SetFont(font, fontSize * 1.1, flags)
+    totalRunTimeLabel:SetRelativeWidth(0.8)
   
-  local totalRunTimeLabel = AceGUI:Create("Label") 
-  totalRunTimeLabel:SetText("Total run time: " .. SecondsToClock(totalRuntime))
-  totalRunTimeLabel:SetFont(font, fontSize * 1.1, flags)
-  totalRunTimeLabel:SetRelativeWidth(0.8)
-
-  container:AddChild(totalRunTimeLabel)
-
+    container:AddChild(totalRunTimeLabel)
+  end
+  
   local spacerLabel = AceGUI:Create("Label")
   spacerLabel:SetText("")
   spacerLabel:SetRelativeWidth(1.0)
