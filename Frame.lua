@@ -47,8 +47,21 @@ local function AddPartyMemberLabelsToContainer(container, partyMember)
   container:AddChild(deathCountLabel)
 end
 
+local function SecondsToClock(seconds)
+  local seconds = tonumber(seconds)
+
+  if seconds <= 0 then
+    return "00:00:00";
+  else
+    hours = string.format("%02.f", math.floor(seconds/3600));
+    mins = string.format("%02.f", math.floor(seconds/60 - (hours*60)));
+    secs = string.format("%02.f", math.floor(seconds - hours*3600 - mins *60));
+    return hours..":"..mins..":"..secs
+  end
+end
+
 local function AddDungeonLabelsToContainer(container, dungeon)
-  local name = C_ChallengeMode.GetMapInfo(dungeon.challengeMapId)
+  local name, _, timeLimit = C_ChallengeMode.GetMapInfo(dungeon.challengeMapId)
   local nameLabel = AceGUI:Create("Label")
   nameLabel:SetText(name)
   nameLabel:SetFont(font, fontSize * 2.25, flags)
@@ -60,15 +73,16 @@ local function AddDungeonLabelsToContainer(container, dungeon)
   levelLabel:SetText("Level " .. dungeon.mythicLevel)
   levelLabel:SetFont(font, fontSize * 2.25, flags)
   levelLabel:SetRelativeWidth(0.2)
+  levelLabel:SetJustifyH("CENTER")
   
   container:AddChild(levelLabel)
   
-  local dateLabel = AceGUI:Create("Label")
-  dateLabel:SetText("Ran on " .. date("%c", dungeon.startedAt))
-  dateLabel:SetFont(font, fontSize * 1.1, flags)
-  dateLabel:SetRelativeWidth(0.8)
+  local startDateLabel = AceGUI:Create("Label")
+  startDateLabel:SetText("Started on " .. date("%c", dungeon.startedAt))
+  startDateLabel:SetFont(font, fontSize * 1.1, flags)
+  startDateLabel:SetRelativeWidth(0.8)
   
-  container:AddChild(dateLabel)
+  container:AddChild(startDateLabel)
 
   local affixInfo
   for _, affixId in ipairs(dungeon.affixes) do
@@ -88,7 +102,58 @@ local function AddDungeonLabelsToContainer(container, dungeon)
   affixesLabel:SetText(affixInfo)
   affixesLabel:SetFont(font, fontSize * 0.8, flags)
   affixesLabel:SetRelativeWidth(0.2)
+  affixesLabel:SetJustifyH("CENTER")
+
   container:AddChild(affixesLabel)
+
+  local endDateLabel = AceGUI:Create("Label")
+  endDateLabel:SetText("Ended on " .. date("%c", dungeon.endedAt))
+  endDateLabel:SetFont(font, fontSize * 1.1, flags) 
+  endDateLabel:SetRelativeWidth(0.8)
+
+  container:AddChild(endDateLabel)
+
+  local keyMod
+  local totalRuntime = difftime(dungeon.endedAt, dungeon.startedAt)
+
+  if dungeon.state == "failed" then
+    keyMod = "-1"
+  else
+    local plusTwo = timeLimit * 0.8
+    local plusThree = timeLimit * 0.6
+    
+    if totalRuntime <= plusThree then
+      keyMod = "+3"
+    elseif totalRuntime <= plusTwo then
+      keyMod = "+2"
+    elseif totalRuntime <= timeLimit then
+      keyMod = "+1"
+    else
+      keyMod = "-1"
+    end
+  end
+
+  local keyModLabel = AceGUI:Create("Label")
+  keyModLabel:SetText(keyMod)
+  keyModLabel:SetRelativeWidth(0.2)
+  keyModLabel:SetFont(font, fontSize * 1.5, flags)
+  keyModLabel:SetJustifyH("CENTER")
+
+  container:AddChild(keyModLabel)
+  
+  local totalRunTimeLabel = AceGUI:Create("Label") 
+  totalRunTimeLabel:SetText("Total run time: " .. SecondsToClock(totalRuntime))
+  totalRunTimeLabel:SetFont(font, fontSize * 1.1, flags)
+  totalRunTimeLabel:SetRelativeWidth(0.8)
+
+  container:AddChild(totalRunTimeLabel)
+
+  local spacerLabel = AceGUI:Create("Label")
+  spacerLabel:SetText("")
+  spacerLabel:SetRelativeWidth(1.0)
+  spacerLabel:SetHeight(fontSize * 1.1)
+
+  container:AddChild(spacerLabel)
 
   for _, partyMember in ipairs(dungeon.party) do
     AddPartyMemberLabelsToContainer(container, partyMember)
@@ -152,6 +217,7 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
     HideFrame(widget)  
   end)
   frame:SetLayout("Fill")
+  frame:EnableResize(false)
 
   tabs = AceGUI:Create("TabGroup")
   tabs:SetLayout("Fill")
