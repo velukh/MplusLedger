@@ -40,6 +40,7 @@ There are many things I'd like to add to MplusLedger and plan to do so as time p
 I'd like to add to the addon over time.
 
 - [ ] Drastically improve the UI to improve experience and amount of information displayed
+- [ ] Properly handle a user leaving group or disconnecting
 - [ ] Add ability to store a player and party's gear set, talents, and buffs when a M+ starts
 - [ ] Add ability to rate a dungeon run or individual player
 - [ ] Add ability to sort, filter and/or search over your MplusLedger history

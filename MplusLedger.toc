@@ -2,7 +2,7 @@
 ## Title: MplusLedger
 ## Notes: A ledger to keep track of all your Mythic+ runs
 ## Author: velukh
-## Version: 0.1.0
+## Version: 0.4.0
 
 ## SavedVariables: MplusLedgerDB
 

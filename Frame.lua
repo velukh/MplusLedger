@@ -20,6 +20,14 @@ local function ClassColorText(text, classToken)
   return string.format("|cff%02x%02x%02x%s|r", color.r * 255, color.g * 255, color.b * 255, text)
 end
 
+local function RedText(text)
+  return "|cFFFF0000" .. text .. "|r"
+end
+
+local function GreenText(text)
+  return "|cFF00FF00" .. text .. "|r"
+end
+
 local function AddPartyMemberLabelsToContainer(container, partyMember) 
   local nameLabel = AceGUI:Create("Label")
   local name = ClassColorText(partyMember.name, partyMember.classToken)
@@ -40,23 +48,34 @@ local function AddPartyMemberLabelsToContainer(container, partyMember)
   container:AddChild(raceClassLabel)
   
   local deathCountLabel = AceGUI:Create("Label")
-  deathCountLabel:SetText(TwoIndent .. "Died " .. partyMember.deathCount .. " times")
+  local timesText
+  if partyMember.deathCount == 1 then
+    timesText = "time"
+  else
+    timesText = "times"
+  end
+  deathCountLabel:SetText(TwoIndent .. "Died " .. partyMember.deathCount .. " " .. timesText)
   deathCountLabel:SetRelativeWidth(1.0)
   deathCountLabel:SetFont(font, fontSize * 0.8, flags)
   
   container:AddChild(deathCountLabel)
 end
 
-local function SecondsToClock(seconds)
+local function SecondsToClock(seconds, excludeHours)
   local seconds = tonumber(seconds)
 
   if seconds <= 0 then
-    return "00:00:00";
+    return "00:00:00"
   else
-    hours = string.format("%02.f", math.floor(seconds/3600));
-    mins = string.format("%02.f", math.floor(seconds/60 - (hours*60)));
-    secs = string.format("%02.f", math.floor(seconds - hours*3600 - mins *60));
-    return hours..":"..mins..":"..secs
+    hours = string.format("%02.f", math.floor(seconds/3600))
+    mins = string.format("%02.f", math.floor(seconds/60 - (hours*60)))
+    secs = string.format("%02.f", math.floor(seconds - hours*3600 - mins *60))
+
+    if not excludeHours then
+      return hours .. ":" .. mins .. ":" .. secs
+    else
+      return mins .. ":" .. secs
+    end
   end
 end
 
@@ -106,56 +125,111 @@ local function AddDungeonLabelsToContainer(container, dungeon)
 
   container:AddChild(affixesLabel)
 
-  if dungeon.state ~= "running" then
-    local endDateLabel = AceGUI:Create("Label")
-    endDateLabel:SetText("Ended on " .. date("%c", dungeon.endedAt))
-    endDateLabel:SetFont(font, fontSize * 1.1, flags) 
-    endDateLabel:SetRelativeWidth(0.8)
+  local totalDeaths = MplusLedger:DungeonTotalDeathCount(dungeon)
+  local totalTimeLostToDeath = totalDeaths * 5
 
-    container:AddChild(endDateLabel)
-
-    local keyMod
-    local totalRuntime = difftime(dungeon.endedAt, dungeon.startedAt)
-
-    if dungeon.state == "failed" then
-      keyMod = "-1"
-    else
-      local plusTwo = timeLimit * 0.8
-      local plusThree = timeLimit * 0.6
-      
-      if totalRuntime <= plusThree then
-        keyMod = "+3"
-      elseif totalRuntime <= plusTwo then
-        keyMod = "+2"
-      elseif totalRuntime <= timeLimit then
-        keyMod = "+1"
-      else
-        keyMod = "-1"
-      end
-    end
-
-    local keyModLabel = AceGUI:Create("Label")
-    keyModLabel:SetText(keyMod)
-    keyModLabel:SetRelativeWidth(0.2)
-    keyModLabel:SetFont(font, fontSize * 1.5, flags)
-    keyModLabel:SetJustifyH("CENTER")
-
-    container:AddChild(keyModLabel)
-
-    local totalRunTimeLabel = AceGUI:Create("Label") 
-    totalRunTimeLabel:SetText("Total run time: " .. SecondsToClock(totalRuntime))
-    totalRunTimeLabel:SetFont(font, fontSize * 1.1, flags)
-    totalRunTimeLabel:SetRelativeWidth(0.8)
-  
-    container:AddChild(totalRunTimeLabel)
+  local endDateText
+  if dungeon.endedAt then
+    endDateText = "Ended on " .. date("%c", dungeon.endedAt)
+  else
+    endDateText = ""
   end
+
+  local endDateLabel = AceGUI:Create("Label")
+  endDateLabel:SetText(endDateText)
+  endDateLabel:SetFont(font, fontSize * 1.1, flags) 
+  endDateLabel:SetRelativeWidth(0.8)
+
+  container:AddChild(endDateLabel)
+
+  local keyMod
+  local endTime = dungeon.endedAt
+  if not endTime then
+    endTime = time()
+  end
+  local totalRuntime = difftime(endTime, (dungeon.startedAt + 10))
+
+  if dungeon.state == "failed" then
+    keyMod = RedText("-1")
+  else
+    local plusTwo = timeLimit * 0.8
+    local plusThree = timeLimit * 0.6
+    local totalRuntimePlusDeaths = totalRuntime + totalTimeLostToDeath
+    
+    if not dungeon.endedAt then
+      keyMod = ""
+    elseif totalRuntimePlusDeaths <= plusThree then
+      keyMod = GreenText("+3")
+    elseif totalRuntimePlusDeaths <= plusTwo then
+      keyMod = GreenText("+2")
+    elseif totalRuntimePlusDeaths <= timeLimit then
+      keyMod = GreenText("+1")
+    else
+      keyMod = RedText("-1")
+    end
+  end
+
+  local keyModLabel = AceGUI:Create("Label")
+  keyModLabel:SetText(keyMod)
+  keyModLabel:SetRelativeWidth(0.2)
+  keyModLabel:SetFont(font, fontSize * 1.5, flags)
+  keyModLabel:SetJustifyH("CENTER")
+
+  container:AddChild(keyModLabel)
+
+  local timeLimitLabel = AceGUI:Create("Label")
+  timeLimitLabel:SetText("Limit: " .. SecondsToClock(timeLimit, true))
+  timeLimitLabel:SetRelativeWidth(0.4)
+  timeLimitLabel:SetFont(font, fontSize * 1.1, flags)
+
+  container:AddChild(timeLimitLabel)
+
+  local totalRunTimeLabel = AceGUI:Create("Label") 
+  totalRunTimeLabel:SetText("Run time: " .. SecondsToClock(totalRuntime))
+  totalRunTimeLabel:SetFont(font, fontSize * 1.1, flags)
+  totalRunTimeLabel:SetRelativeWidth(0.4)
+
+  container:AddChild(totalRunTimeLabel)
+
+  local twoChestTimeLimitLabel = AceGUI:Create("Label")
+  twoChestTimeLimitLabel:SetText("    +2: " .. SecondsToClock(timeLimit * 0.8, true))
+  twoChestTimeLimitLabel:SetRelativeWidth(0.4)
+  twoChestTimeLimitLabel:SetFont(font, fontSize * 1.1, flags)
+
+  container:AddChild(twoChestTimeLimitLabel)
+
+  local totalRunTimeWithDeathLabel = AceGUI:Create("Label")
+  totalRunTimeWithDeathLabel:SetText("Run time w/ deaths: " .. SecondsToClock(totalRuntime + totalTimeLostToDeath))
+  totalRunTimeWithDeathLabel:SetRelativeWidth(0.4)
+  totalRunTimeWithDeathLabel:SetFont(font, fontSize * 1.1, flags)
+
+  container:AddChild(totalRunTimeWithDeathLabel)
+
+  local threeChestTimeLimitLabel = AceGUI:Create("Label")
+  threeChestTimeLimitLabel:SetText("    +3: " .. SecondsToClock(timeLimit * 0.6, true))
+  threeChestTimeLimitLabel:SetRelativeWidth(0.4)
+  threeChestTimeLimitLabel:SetFont(font, fontSize * 1.1, flags)
+
+  container:AddChild(threeChestTimeLimitLabel)
   
+  local deathPenaltyLabel = AceGUI:Create("Label")
+  deathPenaltyLabel:SetText("Lost to deaths: " .. SecondsToClock(totalTimeLostToDeath, true) .. " (" .. totalDeaths .. ")")
+  deathPenaltyLabel:SetFont(font, fontSize * 1.1, flags)
+  deathPenaltyLabel:SetRelativeWidth(0.4)
+
+  container:AddChild(deathPenaltyLabel)
+
   local spacerLabel = AceGUI:Create("Label")
   spacerLabel:SetText("")
   spacerLabel:SetRelativeWidth(1.0)
-  spacerLabel:SetHeight(fontSize * 1.1)
 
   container:AddChild(spacerLabel)
+
+  local anotherSpacerLabel = AceGUI:Create("Label")
+  anotherSpacerLabel:SetText("")
+  anotherSpacerLabel:SetRelativeWidth(1.0)
+
+  container:AddChild(anotherSpacerLabel)
 
   for _, partyMember in ipairs(dungeon.party) do
     AddPartyMemberLabelsToContainer(container, partyMember)
@@ -173,6 +247,8 @@ local function DrawCurrentDungeonTab(container)
     local label = AceGUI:Create("Label")
     label:SetText("No Mythic+ is currently being ran. Please check again after you've started a M+")
     label:SetFullWidth(true)
+    label:SetFont(font, fontSize * 1.5, flags)
+    label:SetJustifyH("CENTER")
     container:AddChild(label)
   end
 end
@@ -181,7 +257,12 @@ local function DrawHistoryTab(container)
   local scrollFrame = AceGUI:Create("ScrollFrame")
   scrollFrame:SetLayout("Flow")
   container:AddChild(scrollFrame)
-  for _, dungeon in ipairs(MplusLedger:FinishedDungeons()) do
+  local dungeons = MplusLedger:FinishedDungeons()
+  table.sort(dungeons, function(arg1, arg2)
+    return arg1.startedAt >= arg2.startedAt
+  end)
+
+  for _, dungeon in ipairs(dungeons) do
     local partyGroup = AceGUI:Create("InlineGroup")
     partyGroup:SetLayout("Flow")
     partyGroup:SetRelativeWidth(1.0)

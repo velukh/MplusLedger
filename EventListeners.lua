@@ -1,15 +1,3 @@
--- First WoW event fired when a M+ dungeon is started; use this opportunity 
--- to ensure that addon state is in a place consistent for starting a new dungeon.
-MplusLedger:RegisterEvent("CHALLENGE_MODE_RESET", function(arg1)
-  -- this is ran before every CHALLENGE_NODE_START
-  -- should check here to see if the addon thinks we are currently running a dungeon.
-  -- if so it is likely that this was a disconnect scenario where the player did not 
-  -- complete the run.
-  if MplusLedger:IsRunningMythicPlus() then
-    MplusLedger:EndMythicPlusAsFailed("disconnected")
-  end
-end)
-
 MplusLedger:RegisterEvent("CHALLENGE_MODE_START", function(_, dungeonId)
   -- it is possible for this even to fire while the mythic+ is ongoing if the player 
   -- logs out and back... silently handle this scenario and do not replay init
@@ -32,5 +20,3 @@ MplusLedger:RegisterEvent("CHALLENGE_MODE_NEW_RECORD", function(_, _, recordTime
   MplusLedger:EndMythicPlusAsCompleted(recordTime)
   MplusLedger:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 end)
-
-

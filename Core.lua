@@ -15,7 +15,7 @@ MplusLedger = LibStub("AceAddon-3.0"):NewAddon(
 )
 
 MplusLedger.Title = "MplusLedger"
-MplusLedger.Version = "0.3.1"
+MplusLedger.Version = "0.4.0"
 MplusLedger.ShowingMainFrame = false
 
 MplusLedger.Events = {
@@ -31,18 +31,21 @@ MplusLedger.Wow = {
 }
 
 local next = next
+local function ResetMythicPlusRuns()
+  if MplusLedger:IsRunningMythicPlus() then
+    MplusLedger:EndMythicPlusAsFailed("The instance was intentionally reset, likely in an effort to lower the key level.")
+  end
+end
+
+local function YellowText(text)
+  return "|cFFFFFF00" .. text .. "|r"
+end
 
 function MplusLedger:OnInitialize()
   local defaults = {}
   self.db = LibStub("AceDB-3.0"):New("MplusLedgerDB", defaults)
   if not self.db.char.version then
     self.db.char.version = MplusLedger.Version
-  end
-end
-
-local function ResetMythicPlusRuns()
-  if MplusLedger:IsRunningMythicPlus() then
-    MplusLedger:EndMythicPlusAsFailed("The instance was intentionally reset, likely in an effort to lower the key level.")
   end
 end
 
@@ -104,6 +107,8 @@ function MplusLedger:StartMythicPlus(challengeMapId)
       })
     end
   end
+  local name = C_ChallengeMode.GetMapInfo(challengeMapId)
+  print(YellowText("MplusLedger") .. ": Tracking your " .. name .. " +" .. level)
 end
 
 local function storeAndResetCurrentDungeon(ledger)
@@ -127,6 +132,7 @@ function MplusLedger:EndMythicPlusAsCompleted(recordTime)
   self.db.char.currentDungeon.state = "success"
   self.db.char.currentDungeon.runTime = recordTime
   storeAndResetCurrentDungeon(self)
+  print(YellowText("MplusLedger") .. ": Stored your successful M+!")
 end
 
 function MplusLedger:EndMythicPlusAsFailed(failureReason)
@@ -137,6 +143,7 @@ function MplusLedger:EndMythicPlusAsFailed(failureReason)
   self.db.char.currentDungeon.state = "failed"
   self.db.char.currentDungeon.failureReason = failureReason
   storeAndResetCurrentDungeon(self)
+  print(YellowText("MplusLedger") .. ": Stored your failed M+")
 end
 
 local surrenderedSoul
@@ -186,10 +193,6 @@ end
 
 function MplusLedger:IsRunningMythicPlus()
   return self.db.char.currentDungeon ~= nil
-end
-
-local function YellowText(text)
-    return "|cFFFFFF00" .. text .. "|r"
 end
 
 function MplusLedger:ShowChatCommands()
