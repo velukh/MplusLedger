@@ -14,50 +14,75 @@ MplusLedger = LibStub("AceAddon-3.0"):NewAddon(
   "AceTimer-3.0"
 )
 
-MplusLedger.Title = "MplusLedger"
-MplusLedger.Version = "0.4.0"
 MplusLedger.ShowingMainFrame = false
 
 MplusLedger.Events = {
   ShowMainFrame = "MPLUS_SHOW_MAIN_FRAME",
   HideMainFrame = "MPLUS_HIDE_MAIN_FRAME",
-  RedrawSelectedTab = "MPLUS_REDRAW_SELECTED_TAB"
+
+  TrackingStarted = "MPLUS_TRACKING_STARTED",
+  TrackingStopped = "MPLUS_TRACKING_STOPPED"
 }
 
 MplusLedger.Wow = {
+  Events = {
+    ChallengeModeStarted = "CHALLENGE_MODE_START",
+    ChallengeModeNewRecord = "CHALLENGE_MODE_NEW_RECORD"
+  },
+  TwoBoostPercentage = 0.8,
+  ThreeBoostPercentage = 0.6,
   SpellIds = {
     SurrenderedSoul = 212570
   }
 }
 
 local next = next
-local function ResetMythicPlusRuns()
-  if MplusLedger:IsRunningMythicPlus() then
-    MplusLedger:EndMythicPlusAsFailed("The instance was intentionally reset, likely in an effort to lower the key level.")
-  end
-end
-
-local function YellowText(text)
-  return "|cFFFFFF00" .. text .. "|r"
-end
+local cache = {
+  title = nil,
+  version = nil,
+  dungeonInfo = {},
+  affixInfo = {}
+}
 
 function MplusLedger:OnInitialize()
   local defaults = {}
   self.db = LibStub("AceDB-3.0"):New("MplusLedgerDB", defaults)
-  if not self.db.char.version then
-    self.db.char.version = MplusLedger.Version
-  end
 end
 
 function MplusLedger:OnEnable()
+  local ResetMythicPlusRuns = function()
+    if self:IsRunningMythicPlus() then
+      self:EndMythicPlusAsFailed("The instance was intentionally reset, likely in an effort to lower the key level.")
+    end
+  end
   self:SecureHook("ResetInstances", ResetMythicPlusRuns)
 end
 
+function MplusLedger:OnDisable()
+  self:Unhook("ResetInstances")
+end
+
+function MplusLedger:Title()
+  if not cache.title then
+    cache.title = GetAddOnMetadata("MplusLedger", "Title")
+  end
+
+  return cache.title
+end
+
+function MplusLedger:Version()
+  if not cache.version then
+    cache.version = GetAddOnMetadata("MplusLedger", "Version")
+  end
+
+  return cache.version
+end
+
 function MplusLedger:ToggleFrame(tabToShow)
-  if MplusLedger.ShowingMainFrame then
-    MplusLedger:SendMessage(MplusLedger.Events.HideMainFrame)
+  if self.ShowingMainFrame then
+    self:SendMessage(self.Events.HideMainFrame)
   else
-    MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame, tabToShow)
+    self:SendMessage(self.Events.ShowMainFrame, tabToShow)
   end
 end
 
@@ -66,27 +91,21 @@ function MplusLedger:StartMythicPlus(challengeMapId)
     error("MplusLedger encountered an error attempting to start your dungeon")
     return 
   end
-  local currentDungeon = {
+  local level, affixes = C_ChallengeMode:GetActiveKeystoneInfo()
+
+  self.db.char.currentDungeon = {
     state = "running",
     challengeMapId = challengeMapId,
-    mythicLevel = nil,
-    affixes = nil,
-    startedAt = nil,
+    mythicLevel = level,
+    affixes = affixes,
+    startedAt = time(),
     endedAt = nil,
     runTime = nil,
     party = {}
   }
 
-  local level, affixes = C_ChallengeMode:GetActiveKeystoneInfo()
-
-  currentDungeon.mythicLevel = level
-  currentDungeon.affixes = affixes
-  currentDungeon.startedAt = time()
-
-  self.db.char.currentDungeon = currentDungeon
-
   local partyUnits = {"player", "party1", "party2", "party3", "party4"}
-  for _, unitId in ipairs(partyUnits) do
+  for _, unitId in pairs(partyUnits) do
     if UnitExists(unitId) then
       local guid = UnitGUID(unitId)
       local player, realm = UnitName(unitId)
@@ -107,57 +126,57 @@ function MplusLedger:StartMythicPlus(challengeMapId)
       })
     end
   end
-  local name = C_ChallengeMode.GetMapInfo(challengeMapId)
-  print(YellowText("MplusLedger") .. ": Tracking your " .. name .. " +" .. level)
+
+  self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", function(_, _, event, _, _, _, _, _, destGUID, destName, destFlags)
+    self:HandlePossiblePlayerDeath(event, destGUID, destName, destFlags)
+  end)
+  self:SendMessage(self.Events.TrackingStarted, self.db.char.currentDungeon)
 end
 
 local function storeAndResetCurrentDungeon(ledger)
   ledger.db.char.currentDungeon.endedAt = time()
-  local currentDungeon = ledger.db.char.currentDungeon
-  local dungeonId = currentDungeon.dungeonId
 
   if not ledger.db.char.finishedMythicRuns then
     ledger.db.char.finishedMythicRuns = {}
   end
 
-  table.insert(ledger.db.char.finishedMythicRuns, currentDungeon)
+  table.insert(ledger.db.char.finishedMythicRuns, ledger.db.char.currentDungeon)
   ledger.db.char.currentDungeon = nil
+  ledger:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 end
 
 function MplusLedger:EndMythicPlusAsCompleted(recordTime)
-  if not MplusLedger:IsRunningMythicPlus() then
-    return
-  end
+  if not self:IsRunningMythicPlus() then return end
 
   self.db.char.currentDungeon.state = "success"
   self.db.char.currentDungeon.runTime = recordTime
+  local eventDungeon = self.db.char.currentDungeon
   storeAndResetCurrentDungeon(self)
-  print(YellowText("MplusLedger") .. ": Stored your successful M+!")
+  self:SendMessage(self.Events.TrackingStopped, eventDungeon)  
 end
 
 function MplusLedger:EndMythicPlusAsFailed(failureReason)
-  if not MplusLedger:IsRunningMythicPlus() then
-    return
-  end
+  if not self:IsRunningMythicPlus() then return end
 
   self.db.char.currentDungeon.state = "failed"
   self.db.char.currentDungeon.failureReason = failureReason
+  local eventDungeon = self.db.char.currentDungeon
   storeAndResetCurrentDungeon(self)
-  print(YellowText("MplusLedger") .. ": Stored your failed M+")
+  self:SendMessage(self.Events.TrackingStopped, eventDungeon)
 end
 
 local surrenderedSoul
 function MplusLedger:HandlePossiblePlayerDeath(event, destGUID, destName, destFlags)
-  if MplusLedger:IsRunningMythicPlus() and event == "UNIT_DIED" and bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0 then
+  if self:IsRunningMythicPlus() and event == "UNIT_DIED" and bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0 then
     if not surrenderedSoul then
-      surrenderedSoul = GetSpellInfo(MplusLedger.Wow.SpellIds.SurrenderedSoul)
+      surrenderedSoul = GetSpellInfo(self.Wow.SpellIds.SurrenderedSoul)
     end
 
     local unitIsFeignDeath = UnitIsFeignDeath(destName)
     local unitSurrenderedSoul = UnitDebuff(destName, surrenderedSoul) == surrenderedSoul
 
     if not unitIsFeignDeath and not unitSurrenderedSoul then
-      for index, partyMember in ipairs(self.db.char.currentDungeon.party) do
+      for index, partyMember in pairs(self.db.char.currentDungeon.party) do
         if partyMember.guid == destGUID then
           local deathCount = self.db.char.currentDungeon.party[index].deathCount 
 
@@ -181,30 +200,113 @@ function MplusLedger:FinishedDungeons()
   end
 end
 
+function MplusLedger:DungeonTotalRuntime(dungeon)
+  return difftime(dungeon.endedAt or time(), dungeon.startedAt)
+end
+
+function MplusLedger:DungeonTotalRuntimeWithDeaths(dungeon)
+  local totalRuntime = self:DungeonTotalRuntime(dungeon)
+  local totalDeaths = self:DungeonTotalDeathCount(dungeon)
+  local totalTimeLostToDeath = totalDeaths * 5
+
+  return totalRuntime + totalTimeLostToDeath
+end
+
 function MplusLedger:DungeonTotalDeathCount(dungeon)
   local count = 0
 
-  for _, partyMember in ipairs(dungeon.party) do
+  for _, partyMember in pairs(dungeon.party) do
     count = count + partyMember.deathCount
   end
 
   return count
 end
 
+local function PrimeDungeonInfoCache(challengeMapId)
+  if not cache.dungeonInfo[challengeMapId] then
+    cache.dungeonInfo[challengeMapId] = {}
+  end
+end
+
+function MplusLedger:DungeonName(dungeon)
+  local challengeMapId = dungeon.challengeMapId
+  PrimeDungeonInfoCache(challengeMapId)
+  if not cache.dungeonInfo[challengeMapId].name then
+    cache.dungeonInfo[challengeMapId].name = C_ChallengeMode.GetMapInfo(challengeMapId)
+  end
+
+  return cache.dungeonInfo[challengeMapId].name
+end
+
+function MplusLedger:DungeonTimeLimit(dungeon)
+  local challengeMapId = dungeon.challengeMapId
+  PrimeDungeonInfoCache(challengeMapId)
+  if not cache.dungeonInfo[challengeMapId].timeLimit then
+    local _, _, timeLimit = C_ChallengeMode.GetMapInfo(challengeMapId)
+    cache.dungeonInfo[challengeMapId].timeLimit = timeLimit
+  end
+
+  return cache.dungeonInfo[challengeMapId].timeLimit
+end
+
+function MplusLedger:DungeonTimeLimitBoostTwo(dungeon)
+  local challengeMapId = dungeon.challengeMapId
+  PrimeDungeonInfoCache(challengeMapId)
+  if not cache.dungeonInfo[challengeMapId].timeLimitBoostTwo then
+    local timeLimit = self:DungeonTimeLimit(dungeon)
+    cache.dungeonInfo[challengeMapId].timeLimitBoostTwo = timeLimit * self.Wow.TwoBoostPercentage
+  end
+
+  return cache.dungeonInfo[challengeMapId].timeLimitBoostTwo
+end
+
+function MplusLedger:DungeonTimeLimitBoostThree(dungeon)
+  local challengeMapId = dungeon.challengeMapId
+  PrimeDungeonInfoCache(challengeMapId)
+  if not cache.dungeonInfo[challengeMapId].timeLimitBoostThree then
+    local timeLimit = self:DungeonTimeLimit(dungeon)
+    cache.dungeonInfo[challengeMapId].timeLimitBoostThree = timeLimit * self.Wow.ThreeBoostPercentage
+  end
+
+  return cache.dungeonInfo[challengeMapId].timeLimitBoostThree
+end
+
+function MplusLedger:DungeonAffixNames(dungeon)
+  local affixes = {}
+  for _, affixId in pairs(dungeon.affixes) do
+    if not cache.affixInfo[affixId] then
+      local name = C_ChallengeMode.GetAffixInfo(affixId)
+      cache.affixInfo[affixId] = name
+    end
+    table.insert(affixes, cache.affixInfo[affixId])
+  end
+
+  return affixes
+end
+
 function MplusLedger:IsRunningMythicPlus()
   return self.db.char.currentDungeon ~= nil
 end
 
-function MplusLedger:ShowChatCommands()
-  local commands = {
-    help = "Show this list of commands.",
-    reset = "Force the reset of your currently running dungeon.",
-    show = "Show the current dungeon for your Mythic+ Ledger",
-    history = "Show the history for your Mythic+ Ledger"
-  }
+function MplusLedger:DungeonBoostProgress(dungeon)
+  if dungeon.state == "failed" then
+    return -1
+  end
 
-  print(YellowText("Mplus Ledger v" .. MplusLedger.Version))
-  for command, description in pairs(commands) do
-    print("/mplus " .. command .. " - " .. description)
+  local timeLimit = self:DungeonTimeLimit(dungeon)
+  local plusTwo = self:DungeonTimeLimitBoostTwo(dungeon)
+  local plusThree = self:DungeonTimeLimitBoostThree(dungeon)
+  local totalRuntimePlusDeaths = self:DungeonTotalRuntimeWithDeaths(dungeon)
+  
+  if not dungeon.endedAt then
+    return 0
+  elseif totalRuntimePlusDeaths <= plusThree then
+    return 3
+  elseif totalRuntimePlusDeaths <= plusTwo then
+    return 2
+  elseif totalRuntimePlusDeaths <= timeLimit then
+    return 1
+  else
+    return -1
   end
 end

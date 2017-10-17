@@ -1,37 +1,72 @@
 # Changelog
 
-## v0.4.0
+This project adheres to [Semantic Versioning 2.0](http://semver.org/) (semver). We are 
+currently in 0.y.x development and there may be breaking changes between minor releases, 
+though we strive to limit breaking changes as much as possible.
 
-- Fix when a player has died 1 time to use proper grammar
-- Add a total time lost to death stat onto each run.
-- Added the amount of time it would take to clear, 2-chest or 3-chest a key
-- Added a message in chat when the dungeon has started and stopped tracking.
+## Unreleased
+
+#### Changed
+
+- Updated the title shown in the WoW interface to "M+ Ledger"
+- Several improvements to clean up the internal codebase, no user-facing functionality should change
+- Refactors how the addon was getting version and title information to pull directly from .toc file
+
+#### Fixed
+
+- Possible bug where an event handler for checking deaths is not properly unregistered if the run fails.
+
+## v0.4.0 - 2017-10-15
+
+#### Added
+
+- For each dungeon the total amount of time lost to death added to display.
+- For each dungeon display the amount of time it would take to complete on time, +2 or +3
+- A message will appear in chat when the ledger has stopped or started tracking a run.
+
+#### Changed
+
 - Updated Current Dungeon tab to show the total run time *from the moment you opened
   the MplusLedger window*. This is not a running timer and is not meant to track 
   your progress in real time.
 - Changed sorting of History tab to show most recent dungeon first.
-- [BUGFIX] Fixed a bug where a user could disconnect during a M+ and have their run 
+
+#### Fixed
+
+- Bug where a user could disconnect during a M+ and have their run 
   improperly marked as failed
-- [BUGFIX] Fixed a bug where the calculation for determining if the key was 2-chested or 
+- Bug where the calculation for determining if the key was 2-chested or 
   3-chested did not propertly take into account the time lost to deaths.
-- [BUGFIX] Fixed a bug where the run time calculation was not taking into account the 10 
+- Bug where the run time calculation was not taking into account the 10 
   second window before the M+ actually begins.
+- When a player has died only 1 time use appropriate grammar
 
-## v0.3.1
+## v0.3.1 - 2017-10-14
 
-- [BUGFIX] Fixes the Current Dungeon tab to display properly by properly handling endedAt being nil
+#### Fixed
 
-## v0.3.0
+- Current Dungeon tab displays properly by handling endedAt being nil
+
+## v0.3.0 - 2017-10-13
+
+#### Added
 
 - Add amount of time the run took as well as when the run ended to the UI for each dungeon
 - Determine whether or not the dungeon was completed +1, +2 or +3 and display accordingly
+
+#### Changed
+
 - Disable ability to resize the main window to ensure UI consistency
 
-## v0.2.0
+## v0.2.0 - 2017-10-12
+
+#### Changed
 
 - Adjusts the dungeon display to show basic information about dungeon, level, affixes and party members
 
-## v0.1.0
+## v0.1.0 - 2017-10-06
+
+#### Added
 
 - Initial UI frame showing basically raw output of the current M+ and previously ran M+
 - Tracks the following pieces of information about each M+:

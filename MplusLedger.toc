@@ -1,14 +1,18 @@
 ## Interface: 70300
-## Title: MplusLedger
+## Title: M+ Ledger
 ## Notes: A ledger to keep track of all your Mythic+ runs
 ## Author: velukh
 ## Version: 0.4.0
+## X-Source-URL: https://github.com/velukh/MplusLedger
+## X-Issues-URL: https://github.com/velukh/MplusLedger/issues
 
 ## SavedVariables: MplusLedgerDB
 
 embeds.xml
 
+ColorText.lua
 Core.lua
 EventListeners.lua
+UiUtils.lua
 Frame.lua
 ChatCommand.lua
