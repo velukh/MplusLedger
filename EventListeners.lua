@@ -1,13 +1,12 @@
+local MplusLedger = MplusLedger
+local ColorText = LibStub("MplusLedgerColorText-1.0")
+
 MplusLedger:RegisterEvent("CHALLENGE_MODE_START", function(_, dungeonId)
   -- it is possible for this even to fire while the mythic+ is ongoing if the player 
   -- logs out and back... silently handle this scenario and do not replay init
   if not MplusLedger:IsRunningMythicPlus() then
-    MplusLedger:StartMythicPlus(C_ChallengeMode.GetActiveChallengeMapID())  
-    MplusLedger:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", function(_, timestamp, event, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags)
-      MplusLedger:HandlePossiblePlayerDeath(event, destGUID, destName, destFlags)
-    end)
+    MplusLedger:StartMythicPlus(C_ChallengeMode.GetActiveChallengeMapID())
   end
-  
 end)
 
 -- Marks the currently running dungeon as having completed successfully, successfully here 
@@ -18,5 +17,19 @@ end)
 -- amount of time it took.
 MplusLedger:RegisterEvent("CHALLENGE_MODE_NEW_RECORD", function(_, _, recordTime)
   MplusLedger:EndMythicPlusAsCompleted(recordTime)
-  MplusLedger:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+end)
+
+MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStopped, function(_, dungeon)
+  local stateMsg
+  if dungeon.state == "failed" then
+    stateMsg = "failed"
+  else
+    stateMsg = "successful"
+  end
+  print(ColorText:Yellow(MplusLedger:Title()) .. ": Stored your " .. stateMsg .. " M+!")
+end)
+
+MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStarted, function(_, dungeon)
+  local name = C_ChallengeMode.GetMapInfo(dungeon.challengeMapId)
+  print(ColorText:Yellow(MplusLedger:Title()) .. ": Tracking your " .. name .. " +" .. dungeon.mythicLevel)
 end)
