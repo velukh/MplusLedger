@@ -4,7 +4,13 @@ This project adheres to [Semantic Versioning 2.0](http://semver.org/) (semver). 
 currently in 0.y.x development and there may be breaking changes between minor releases, 
 though we strive to limit breaking changes as much as possible.
 
-## Unreleased
+## v0.5.0 - 2017-10-27
+
+#### Added
+
+- Added a new 'Your Keys' tab that allows you to track what keys you have across all 
+of your characters. *Please note that the key will not appear until you have logged onto 
+that character each week.*
 
 #### Changed
 

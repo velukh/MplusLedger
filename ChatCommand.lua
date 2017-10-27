@@ -7,6 +7,7 @@ local function ShowChatCommands()
     help = "Show this list of commands.",
     reset = "Force the reset of your currently running dungeon.",
     show = "Show the current dungeon for your M+ Ledger",
+    keys = "Show the keystones you have for your characters",
     history = "Show the history for your M+ Ledger"
   }
 
@@ -20,8 +21,8 @@ MplusLedger:RegisterChatCommand("mplus", function(args)
   local command = MplusLedger:GetArgs(args)
   if command == "show" then
     MplusLedger:ToggleFrame()
-  elseif command == "history" then
-    MplusLedger:ToggleFrame("history")
+  elseif command == "history" or command == "keys" then
+    MplusLedger:ToggleFrame(command)
   elseif command == "reset" then
     if MplusLedger:IsRunningMythicPlus() then
       MplusLedger:EndMythicPlusAsFailed("Dungeon was intentionally reset using the /mplus reset command")
