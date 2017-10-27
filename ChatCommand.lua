@@ -30,7 +30,6 @@ MplusLedger:RegisterChatCommand("mplus", function(args)
       MplusLedger:EndMythicPlusAsFailed("Dungeon was intentionally reset using the /mplus reset command")
     end
   elseif command == "button" then
-    print(commandArg1)
     if commandArg1 == "on" or commandArg1 == "show" then
       icon:Show("MplusLedger")
     elseif commandArg1 == "off" or commandArg1 == "hide" then
