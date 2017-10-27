@@ -6,7 +6,7 @@
 ## X-Source-URL: https://github.com/velukh/MplusLedger
 ## X-Issues-URL: https://github.com/velukh/MplusLedger/issues
 
-## SavedVariables: MplusLedgerDB
+## SavedVariables: MplusLedgerDB, MplusLedgerIconDB
 
 embeds.xml
 
@@ -16,3 +16,4 @@ EventListeners.lua
 UiUtils.lua
 Frame.lua
 ChatCommand.lua
+DataBroker.lua

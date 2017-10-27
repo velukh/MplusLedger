@@ -11,6 +11,7 @@ though we strive to limit breaking changes as much as possible.
 - Added a new 'Your Keys' tab that allows you to track what keys you have across all 
 of your characters. *Please note that the key will not appear until you have logged onto 
 that character each week.*
+- Added a minimap button to show your keystones as a tooltip and to open the main ledger window when clicked on. You may turn the button off with /mplus button off and turn it back on with /mplus button on.
 
 #### Changed
 

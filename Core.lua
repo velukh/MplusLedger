@@ -343,15 +343,18 @@ function MplusLedger:StoreKeystoneFromBags()
   local keystone = MplusLedger:FetchKeystoneFromBags()
   local characterName = UnitName("player")
   local _, classToken = UnitClass("player")
+  local level = UnitLevel("player")
 
-  if not self.db.realm.keystones then
-    self.db.realm.keystones = {}
+  if level == 110 then
+    if not self.db.realm.keystones then
+      self.db.realm.keystones = {}
+    end
+  
+    self.db.realm.keystones[characterName] = {
+      keystone = keystone,
+      classToken = classToken
+    }
   end
-
-  self.db.realm.keystones[characterName] = {
-    keystone = keystone,
-    classToken = classToken
-  }
 end
 
 function MplusLedger:GetCurrentKeystones()

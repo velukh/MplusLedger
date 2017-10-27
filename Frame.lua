@@ -178,7 +178,6 @@ local function DrawKeysTab(container)
   for character, stoneInfo in pairs(MplusLedger:GetCurrentKeystones()) do
     local characterGroup = AceGUI:Create("InlineGroup")
     characterGroup:SetRelativeWidth(1.0)
-    characterGroup.content:GetParent():SetBackdropBorderColor(0, 0, 0)
     local nameLabel = UiUtils:CreateLabel{
       text = UiUtils:Indent(UiUtils:ClassColoredName(character, stoneInfo.classToken)), 
       fontSizeMultiplier = 1.25
