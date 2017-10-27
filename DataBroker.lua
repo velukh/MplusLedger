@@ -46,8 +46,8 @@ end
 local f = CreateFrame("Frame")
 f:SetScript("OnEvent", function()
   local icon = LibStub("LibDBIcon-1.0", true)
-	if not MplusLedgerIconDB then MplusLedgerIconDB = {} end
-	icon:Register("MplusLedger", ldbPlugin, MplusLedgerIconDB)
+  if not MplusLedgerIconDB then MplusLedgerIconDB = {} end
+  icon:Register("MplusLedger", ldbPlugin, MplusLedgerIconDB)
 end)
 
 f:RegisterEvent("PLAYER_LOGIN")
