@@ -184,29 +184,33 @@ local function DrawKeysTab(container)
     }
     characterGroup:AddChild(nameLabel)
 
-    local mythicName = stoneInfo.keystone.name
-    local mythicLevel = stoneInfo.keystone.mythicLevel
-    local affixes = stoneInfo.keystone.affixes
-    local affixString
+    local labelText
+    if not stoneInfo.keystone then
+      labelText = "No keystone."
+    else
+      local mythicName = stoneInfo.keystone.name
+      local mythicLevel = stoneInfo.keystone.mythicLevel
+      local affixes = stoneInfo.keystone.affixes
+      local affixString
 
-    for _, affixName in pairs(affixes) do
-      if not affixString then
-        affixString = affixName
-      else
-        affixString = affixString .. ", " .. affixName
+      for _, affixName in pairs(affixes) do
+        if not affixString then
+          affixString = affixName
+        else
+          affixString = affixString .. ", " .. affixName
+        end
       end
-    end
 
-    local labelText = "+" .. mythicLevel .. " " .. mythicName
-    if affixString then
-      labelText = labelText .. " (" .. affixString .. ")"
+      labelText = "+" .. mythicLevel .. " " .. mythicName
+      if affixString then
+        labelText = labelText .. " (" .. affixString .. ")"
+      end
     end
     local keystoneLabel = UiUtils:CreateLabel{
       text = UiUtils:Indent(labelText, 2),
       fontSizeMultiplier = 1.1
     }
     characterGroup:AddChild(keystoneLabel)
-
     scrollFrame:AddChild(characterGroup)
   end
 end

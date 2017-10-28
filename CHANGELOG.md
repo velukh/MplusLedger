@@ -4,7 +4,7 @@ This project adheres to [Semantic Versioning 2.0](http://semver.org/) (semver). 
 currently in 0.y.x development and there may be breaking changes between minor releases, 
 though we strive to limit breaking changes as much as possible.
 
-## v0.5.0 - 2017-10-27
+## v0.5.0 - 2017-10-28
 
 #### Added
 
@@ -22,6 +22,7 @@ that character each week.*
 #### Fixed
 
 - Possible bug where an event handler for checking deaths is not properly unregistered if the run fails.
+- Possible bug where a succesful key may not be marked as completed properly.
 
 ## v0.4.0 - 2017-10-15
 
