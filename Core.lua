@@ -146,11 +146,10 @@ local function storeAndResetCurrentDungeon(ledger)
   ledger:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 end
 
-function MplusLedger:EndMythicPlusAsCompleted(recordTime)
+function MplusLedger:EndMythicPlusAsCompleted()
   if not self:IsRunningMythicPlus() then return end
 
   self.db.char.currentDungeon.state = "success"
-  self.db.char.currentDungeon.runTime = recordTime
   local eventDungeon = self.db.char.currentDungeon
   storeAndResetCurrentDungeon(self)
   self:SendMessage(self.Events.TrackingStopped, eventDungeon)  

@@ -9,14 +9,8 @@ MplusLedger:RegisterEvent("CHALLENGE_MODE_START", function(_, dungeonId)
   end
 end)
 
--- Marks the currently running dungeon as having completed successfully, successfully here 
--- means that a chest was received at dungeon completion... regardless of timer.
---
--- Please note that there is a CHALLENGE_MODE_COMPLETED event that is fired immediately before 
--- this that we are ignoring because this event includes more details about the run, namely the 
--- amount of time it took.
-MplusLedger:RegisterEvent("CHALLENGE_MODE_NEW_RECORD", function(_, _, recordTime)
-  MplusLedger:EndMythicPlusAsCompleted(recordTime)
+MplusLedger:RegisterEvent("CHALLENGE_MODE_COMPLETED", function()
+  MplusLedger:EndMythicPlusAsCompleted()
   MplusLedger:StoreKeystoneFromBags()
 end)
 
