@@ -155,9 +155,13 @@ function MplusLedgerUiUtils:DungeonAffixInfo(dungeon)
   return affixInfo
 end
 
+function MplusLedgerUiUtils:ClassColoredName(characterName, classToken)
+  local color = RAID_CLASS_COLORS[classToken]
+  return ColorText:FromRGB(characterName, color)
+end
+
 function MplusLedgerUiUtils:PartyMemberName(partyMember)
-  local color = RAID_CLASS_COLORS[partyMember.classToken]
-  local name = ColorText:FromRGB(partyMember.name, color)
+  local name = self:ClassColoredName(partyMember.name, partyMember.classToken)
   if partyMember.realm then
     name = name .. " - " .. partyMember.realm
   end

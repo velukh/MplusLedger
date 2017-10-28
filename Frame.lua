@@ -170,6 +170,47 @@ local function DrawHistoryTab(container)
   end
 end
 
+local function DrawKeysTab(container)
+  local scrollFrame = AceGUI:Create("ScrollFrame")
+  scrollFrame:SetLayout("Flow")
+  container:AddChild(scrollFrame)
+
+  for character, stoneInfo in pairs(MplusLedger:GetCurrentKeystones()) do
+    local characterGroup = AceGUI:Create("InlineGroup")
+    characterGroup:SetRelativeWidth(1.0)
+    local nameLabel = UiUtils:CreateLabel{
+      text = UiUtils:Indent(UiUtils:ClassColoredName(character, stoneInfo.classToken)), 
+      fontSizeMultiplier = 1.25
+    }
+    characterGroup:AddChild(nameLabel)
+
+    local mythicName = stoneInfo.keystone.name
+    local mythicLevel = stoneInfo.keystone.mythicLevel
+    local affixes = stoneInfo.keystone.affixes
+    local affixString
+
+    for _, affixName in pairs(affixes) do
+      if not affixString then
+        affixString = affixName
+      else
+        affixString = affixString .. ", " .. affixName
+      end
+    end
+
+    local labelText = "+" .. mythicLevel .. " " .. mythicName
+    if affixString then
+      labelText = labelText .. " (" .. affixString .. ")"
+    end
+    local keystoneLabel = UiUtils:CreateLabel{
+      text = UiUtils:Indent(labelText, 2),
+      fontSizeMultiplier = 1.1
+    }
+    characterGroup:AddChild(keystoneLabel)
+
+    scrollFrame:AddChild(characterGroup)
+  end
+end
+
 local function SelectedTab(container, event, tab)
   container:ReleaseChildren()
   selectedTab = tab
@@ -177,6 +218,8 @@ local function SelectedTab(container, event, tab)
     DrawCurrentDungeonTab(container)
   elseif tab == "history" then
     DrawHistoryTab(container)
+  elseif tab == "keys" then
+    DrawKeysTab(container)
   end
 end
 
@@ -187,7 +230,7 @@ end)
 MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToShow)
   if not tabToShow then
     tabToShow = "current_dungeon"
-  elseif tabToShow ~= "current_dungeon" and tabToShow ~= "history" then
+  elseif tabToShow ~= "current_dungeon" and tabToShow ~= "history" and tabToShow ~= "keys" then
     error("A tab that does not exist, " .. tabToShow .. ", was asked to be shown. If you have not modified this addon's source code please submit an issue describing your problem")
   end
   
@@ -212,6 +255,10 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
     {
       text = "History",
       value = "history"
+    },
+    {
+      text = "Your Keys",
+      value = "keys"
     }
   })
 

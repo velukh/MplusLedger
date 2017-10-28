@@ -17,6 +17,11 @@ end)
 -- amount of time it took.
 MplusLedger:RegisterEvent("CHALLENGE_MODE_NEW_RECORD", function(_, _, recordTime)
   MplusLedger:EndMythicPlusAsCompleted(recordTime)
+  MplusLedger:StoreKeystoneFromBags()
+end)
+
+MplusLedger:RegisterEvent("PLAYER_ENTERING_WORLD", function()
+  MplusLedger:StoreKeystoneFromBags()
 end)
 
 MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStopped, function(_, dungeon)

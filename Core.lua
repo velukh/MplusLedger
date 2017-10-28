@@ -54,6 +54,7 @@ function MplusLedger:OnEnable()
     if self:IsRunningMythicPlus() then
       self:EndMythicPlusAsFailed("The instance was intentionally reset, likely in an effort to lower the key level.")
     end
+    self:StoreKeystoneFromBags()
   end
   self:SecureHook("ResetInstances", ResetMythicPlusRuns)
 end
@@ -309,4 +310,53 @@ function MplusLedger:DungeonBoostProgress(dungeon)
   else
     return -1
   end
+end
+
+function MplusLedger:FetchKeystoneFromBags()
+  for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
+		local slots = GetContainerNumSlots(container)
+		for slot=1, slots do
+			local _, _, _, _, _, _, slotLink = GetContainerItemInfo(container, slot)
+			local itemString = slotLink and slotLink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
+      if itemString then
+        local info = { strsplit(":", itemString) }
+        local name = C_ChallengeMode.GetMapInfo(info[1])
+        local mapLevel = tonumber(info[2])
+
+        local affixes = {}
+        for _, affixId in ipairs({info[3], info[4], info[5]}) do
+          local affixName = C_ChallengeMode.GetAffixInfo(affixId)
+          table.insert(affixes, affixName)
+        end
+
+        return {
+          name = name,
+          mythicLevel = mapLevel,
+          affixes = affixes
+        }
+			end
+		end
+	end
+end
+
+function MplusLedger:StoreKeystoneFromBags()
+  local keystone = MplusLedger:FetchKeystoneFromBags()
+  local characterName = UnitName("player")
+  local _, classToken = UnitClass("player")
+  local level = UnitLevel("player")
+
+  if level == 110 then
+    if not self.db.realm.keystones then
+      self.db.realm.keystones = {}
+    end
+  
+    self.db.realm.keystones[characterName] = {
+      keystone = keystone,
+      classToken = classToken
+    }
+  end
+end
+
+function MplusLedger:GetCurrentKeystones()
+  return self.db.realm.keystones or {}
 end
