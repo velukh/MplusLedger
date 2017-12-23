@@ -38,7 +38,12 @@ MplusLedger:RegisterChatCommand("mplus", function(args)
   elseif command == "help" then
     ShowChatCommands()
   elseif command == "dev" then
-    MplusLedger:DumpCache()
+    local keystone = MplusLedger:GetSpecificCharacterKeystone()
+    if keystone then
+      print(keystone.name)
+    else
+      print('no keystone')
+    end
   else
     print(ColorText:Red("You MUST pass something valid to the /mplus command"))
     ShowChatCommands()

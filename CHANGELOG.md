@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning 2.0](http://semver.org/) (semver). 
 currently in 0.y.x development and there may be breaking changes between minor releases, 
 though we strive to limit breaking changes as much as possible.
 
+## v0.6.0 - 2017-12-??
+
+#### Added
+
+- Added ability to view party member keys if they also have M+ Ledger installed.
+
 ## v0.5.0 - 2017-10-28
 
 #### Added

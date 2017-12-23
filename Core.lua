@@ -8,6 +8,7 @@ a given spec, dungeon, affixes, level, and party composition.
 --]]
 MplusLedger = LibStub("AceAddon-3.0"):NewAddon(
   "MplusLedger",
+  "AceComm-3.0",
   "AceConsole-3.0",
   "AceEvent-3.0",
   "AceHook-3.0",
@@ -27,7 +28,9 @@ MplusLedger.Events = {
 MplusLedger.Wow = {
   Events = {
     ChallengeModeStarted = "CHALLENGE_MODE_START",
-    ChallengeModeNewRecord = "CHALLENGE_MODE_NEW_RECORD"
+    ChallengeModeCompleted = "CHALLENGE_MODE_COMPLETED",
+    PartyMembersChanged = "PARTY_MEMBERS_CHANGED",
+    PlayerEnteringWorld = "PLAYER_ENTERING_WORLD"
   },
   TwoBoostPercentage = 0.8,
   ThreeBoostPercentage = 0.6,
@@ -339,7 +342,7 @@ function MplusLedger:FetchKeystoneFromBags()
 end
 
 function MplusLedger:StoreKeystoneFromBags()
-  local keystone = MplusLedger:FetchKeystoneFromBags()
+  local keystone = self:FetchKeystoneFromBags()
   local characterName = UnitName("player")
   local _, classToken = UnitClass("player")
   local level = UnitLevel("player")
@@ -356,6 +359,33 @@ function MplusLedger:StoreKeystoneFromBags()
   end
 end
 
+function MplusLedger:GetSpecificCharacterKeystone()
+  local characterName = UnitName("player")
+
+  if not self.db.realm.keystones then 
+    return 
+  end
+
+  return self.db.realm.keystones[characterName].keystone
+end
+
 function MplusLedger:GetCurrentKeystones()
   return self.db.realm.keystones or {}
+end
+
+function MplusLedger:SendPartyYourKeystone()
+  local keystone = self:GetSpecificCharacterKeystone()
+  local characterName, realm = UnitName("player")
+  local _, classToken = UnitClass("player")
+  local level = UnitLevel("player")
+  local message = characterName .. "," .. realm .. ","
+
+  if level === 110 then
+    if keystone then
+      message = message .. keystone.mythicLevel .. "," .. keystone.name
+    else
+      message = message .. 0 .. ","
+    end
+    self:SendMessage("MplusLedger", message, "PARTY")
+  end
 end
