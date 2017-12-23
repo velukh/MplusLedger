@@ -381,7 +381,7 @@ function MplusLedger:SendPartyYourKeystone()
   end
   local _, classToken = UnitClass("player")
   local level = UnitLevel("player")
-  local message = characterName .. "," .. realm .. ","
+  local message = characterName .. "," .. realm .. "," .. classToken .. ","
 
   if level == 110 then
     if keystone then
@@ -389,6 +389,29 @@ function MplusLedger:SendPartyYourKeystone()
     else
       message = message .. 0 .. ","
     end
-    self:SendMessage("MplusLedger", message, "PARTY")
+    self:SendCommMessage("MplusLedger", message, "PARTY")
   end
+end
+
+function MplusLedger:GetPartyMemberKeystones()
+  return self.db.char.currentParty
+end
+
+function MplusLedger:ResetCurrentParty()
+  self.db.char.currentParty = {}
+end
+
+function MplusLedger:SavePartyMemberKeystone(partyMemberString)
+  local characterName, realm, classToken, mythicLevel, dungeon = strsplit(",", message)
+  if not self.db.char.currentParty then
+    self.db.char.currentParty = {}
+  end
+
+  self.db.char.currentParty[characterName] = {
+    name = characterName,
+    realm = realm,
+    classToken = classToken,
+    mythicLevel = mythicLevel,
+    dungeon = dungeon
+  }
 end

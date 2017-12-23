@@ -19,8 +19,14 @@ MplusLedger:RegisterEvent(MplusLedger.Wow.Events.PlayerEnteringWorld, function()
 end)
 
 MplusLedger:RegisterEvent(MplusLedger.Wow.Events.GroupRosterUpdate, function()
-  print('calling this correctly')
-  MplusLedger:SendPartyYourKeystone()
+  print("Num group members", GetNumGroupMembers())
+  local numMembers = GetNumGroupMembers()
+  if numMembers == 0 then
+    MplusLedger:ResetCurrentParty()
+  elseif numMembers > 1 then
+    MplusLedger:SendPartyYourKeystone()
+  end
+  
 end)
 
 MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStopped, function(_, dungeon)
@@ -39,5 +45,5 @@ MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStarted, function(_, dung
 end)
 
 MplusLedger:RegisterComm("MplusLedger", function(_, message)
-  print(message)
+ MplusLedger:SavePartyMemberKeystone(message)
 end)
