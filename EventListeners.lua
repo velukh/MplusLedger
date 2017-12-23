@@ -18,7 +18,8 @@ MplusLedger:RegisterEvent(MplusLedger.Wow.Events.PlayerEnteringWorld, function()
   MplusLedger:StoreKeystoneFromBags()
 end)
 
-MplusLedger:RegisterEvent(MplusLedger.Wow.Events.PartyMembersChanged, function()
+MplusLedger:RegisterEvent(MplusLedger.Wow.Events.GroupRosterUpdate, function()
+  print('calling this correctly')
   MplusLedger:SendPartyYourKeystone()
 end)
 

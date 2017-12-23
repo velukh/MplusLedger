@@ -29,7 +29,7 @@ MplusLedger.Wow = {
   Events = {
     ChallengeModeStarted = "CHALLENGE_MODE_START",
     ChallengeModeCompleted = "CHALLENGE_MODE_COMPLETED",
-    PartyMembersChanged = "PARTY_MEMBERS_CHANGED",
+    GroupRosterUpdate = "GROUP_ROSTER_UPDATE",
     PlayerEnteringWorld = "PLAYER_ENTERING_WORLD"
   },
   TwoBoostPercentage = 0.8,
@@ -376,6 +376,9 @@ end
 function MplusLedger:SendPartyYourKeystone()
   local keystone = self:GetSpecificCharacterKeystone()
   local characterName, realm = UnitName("player")
+  if not realm then
+    realm = GetRealmName()
+  end
   local _, classToken = UnitClass("player")
   local level = UnitLevel("player")
   local message = characterName .. "," .. realm .. ","
