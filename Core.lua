@@ -380,7 +380,7 @@ function MplusLedger:SendPartyYourKeystone()
   local level = UnitLevel("player")
   local message = characterName .. "," .. realm .. ","
 
-  if level === 110 then
+  if level == 110 then
     if keystone then
       message = message .. keystone.mythicLevel .. "," .. keystone.name
     else

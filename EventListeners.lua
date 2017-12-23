@@ -18,8 +18,8 @@ MplusLedger:RegisterEvent(MplusLedger.Wow.Events.PlayerEnteringWorld, function()
   MplusLedger:StoreKeystoneFromBags()
 end)
 
-MplusLedger:RegisterEvent(MplusLedger.Wow.EVents.PartyMembersChanged, function()
-
+MplusLedger:RegisterEvent(MplusLedger.Wow.Events.PartyMembersChanged, function()
+  MplusLedger:SendPartyYourKeystone()
 end)
 
 MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStopped, function(_, dungeon)
