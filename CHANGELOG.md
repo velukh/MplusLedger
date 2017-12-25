@@ -4,6 +4,39 @@ This project adheres to [Semantic Versioning 2.0](http://semver.org/) (semver). 
 currently in 0.y.x development and there may be breaking changes between minor releases, 
 though we strive to limit breaking changes as much as possible.
 
+## v0.6.0 - 2017-12-??
+
+#### Added
+
+- Added ability to view party member keys if they also have M+ Ledger installed. You may 
+view party member keys in the new "Party Keys" tab in your M+ Ledger, in the minimap button while 
+you're in a party, and by executing "/mplus party" which will output your party member's keys to chat.
+- Added a new config window to allow various settings to be changed. You can open up the config window 
+by right clicking the minimap button, by executing "/mplus config", or by going into the default 
+Blizzard addon configuration. Currently you may set the following options:
+  - Show or hide the minimap button
+  - Show or hide character with no keys in the tooltip and 'Your Keys' section. This will not impact 
+  the currently logged in character; they will always display regardless of whether or not they have 
+  a key.
+  - Show or hide party members in minimap button.
+
+#### Changed
+
+- Reordered the tabs in the ledger to prioritize the keys you have across your characters as 
+well as the keys your party members may have.
+- Redesigned the tooltip and 'Your Keys' tab section to always show the character you're currently 
+logged in at the top.
+- Changed the M+ Ledger minimap butto from a custom icon to the same icon used for MYthic keystones.
+
+#### Deprecated
+
+- Deprecated the below chat commands. They will be removed in the next version of the addon. 
+Additionally they will output an additional deprecation message warning of there removal as well 
+as alternatives that you should use in its place. 
+  - /mplus history
+  - /mplus keys
+  - /mplus button
+
 ## v0.5.0 - 2017-10-28
 
 #### Added

@@ -8,6 +8,7 @@ a given spec, dungeon, affixes, level, and party composition.
 --]]
 MplusLedger = LibStub("AceAddon-3.0"):NewAddon(
   "MplusLedger",
+  "AceComm-3.0",
   "AceConsole-3.0",
   "AceEvent-3.0",
   "AceHook-3.0",
@@ -15,6 +16,10 @@ MplusLedger = LibStub("AceAddon-3.0"):NewAddon(
 )
 
 MplusLedger.ShowingMainFrame = false
+
+MplusLedger.CommMessages = {
+  ResyncKeys = "RESYNC_KEYS"
+}
 
 MplusLedger.Events = {
   ShowMainFrame = "MPLUS_SHOW_MAIN_FRAME",
@@ -27,7 +32,9 @@ MplusLedger.Events = {
 MplusLedger.Wow = {
   Events = {
     ChallengeModeStarted = "CHALLENGE_MODE_START",
-    ChallengeModeNewRecord = "CHALLENGE_MODE_NEW_RECORD"
+    ChallengeModeCompleted = "CHALLENGE_MODE_COMPLETED",
+    GroupRosterUpdate = "GROUP_ROSTER_UPDATE",
+    PlayerEnteringWorld = "PLAYER_ENTERING_WORLD"
   },
   TwoBoostPercentage = 0.8,
   ThreeBoostPercentage = 0.6,
@@ -43,6 +50,36 @@ local cache = {
   dungeonInfo = {},
   affixInfo = {}
 }
+local ColorText = LibStub("MplusLedgerColorText-1.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+local icon = LibStub("LibDBIcon-1.0", true)
+
+function MplusLedger:SetConfig(key, value)
+  if not self.db.realm.configOptions then
+    self.db.realm.configOptions = {}
+  end
+
+  self.db.realm.configOptions[key] = value
+end
+
+function MplusLedger:GetConfig(key)
+  if not self.db.realm.configOptions then
+    self.db.realm.configOptions = {}
+  end
+
+  local defaultNilsToTrue = {
+    enable_minimap = true,
+    display_no_key_characters = true,
+    display_party_in_minimap = true
+  }
+
+  local value = self.db.realm.configOptions[key]
+  if value == nil and defaultNilsToTrue[key] ~= nil then
+    return true
+  else
+    return value
+  end
+end
 
 function MplusLedger:OnInitialize()
   local defaults = {}
@@ -315,7 +352,7 @@ function MplusLedger:FetchKeystoneFromBags()
   for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
 		local slots = GetContainerNumSlots(container)
 		for slot=1, slots do
-			local _, _, _, _, _, _, slotLink = GetContainerItemInfo(container, slot)
+      local textureId, _, _, _, _, _, slotLink = GetContainerItemInfo(container, slot)
 			local itemString = slotLink and slotLink:match("|Hkeystone:([0-9:]+)|h(%b[])|h")
       if itemString then
         local info = { strsplit(":", itemString) }
@@ -339,7 +376,7 @@ function MplusLedger:FetchKeystoneFromBags()
 end
 
 function MplusLedger:StoreKeystoneFromBags()
-  local keystone = MplusLedger:FetchKeystoneFromBags()
+  local keystone = self:FetchKeystoneFromBags()
   local characterName = UnitName("player")
   local _, classToken = UnitClass("player")
   local level = UnitLevel("player")
@@ -356,6 +393,198 @@ function MplusLedger:StoreKeystoneFromBags()
   end
 end
 
+function MplusLedger:GetSpecificCharacterKeystone()
+  local characterName = UnitName("player")
+
+  if not self.db.realm.keystones then 
+    return 
+  end
+
+  return self.db.realm.keystones[characterName]
+end
+
 function MplusLedger:GetCurrentKeystones()
   return self.db.realm.keystones or {}
+end
+
+function MplusLedger:SendPartyYourKeystone()
+  local stoneInfo = self:GetSpecificCharacterKeystone()
+  local characterName, realm = UnitName("player")
+  if not realm then
+    realm = GetRealmName()
+  end
+  local _, classToken = UnitClass("player")
+  local level = UnitLevel("player")
+  local message = characterName .. "," .. realm .. "," .. classToken .. ","
+
+  if level == 110 then
+    if stoneInfo.keystone then
+      message = message .. stoneInfo.keystone.mythicLevel .. "," .. stoneInfo.keystone.name
+    else
+      message = message .. 0 .. ","
+    end
+    self:SendCommMessage("MplusLedger", message, "PARTY")
+  end
+end
+
+function MplusLedger:GetPartyMemberKeystones()
+  return self.db.char.currentParty
+end
+
+function MplusLedger:ResetCurrentParty()
+  self.db.char.currentParty = {}
+end
+
+function MplusLedger:SavePartyMemberKeystone(partyMemberString)
+  local characterName, realm, classToken, mythicLevel, dungeon = strsplit(",", partyMemberString)
+  if not self.db.char.currentParty then
+    self.db.char.currentParty = {}
+  end
+
+  self.db.char.currentParty[characterName] = {
+    name = characterName,
+    realm = realm,
+    classToken = classToken,
+    mythicLevel = mythicLevel,
+    dungeon = dungeon
+  }
+end
+
+function MplusLedger:ClearRemovedPartyMembers()
+  local units = {"party1", "party2", "party3", "party4"}
+  local unitNames = {}
+  for unit in ipairs(units) do
+    local characterName = UnitName(unit)
+    table.insert(unitNames, characterName)
+  end
+
+  for storedCharacterName, _ in pairs(self.db.char.currentParty) do
+    if unitNames[storedCharacterName] == nil then
+      self.db.char.currentParty[storedCharacterName] = nil
+    end
+  end
+end
+
+function MplusLedger:CheckForPartyKeyResync()
+  self:SendCommMessage("MplusLedger", MplusLedger.CommMessages.ResyncKeys, "PARTY")
+end
+
+function MplusLedger:ProcessAddonMessage(message)
+  local knownCommands = {}
+  knownCommands[self.CommMessages.ResyncKeys] = function()
+    self:SendPartyYourKeystone()
+  end
+
+  if knownCommands[message] ~= nil then
+    knownCommands[message]()
+  else
+    MplusLedger:SavePartyMemberKeystone(message)
+  end
+end
+
+function MplusLedger:CountTable(table)
+  local count = 0
+  if type(table) == "table" then
+    for _ in pairs(table) do
+      count = count + 1
+    end
+  end
+
+  return count
+end
+
+function MplusLedger:SendPartyKeystonesToChat()
+  local keystones = MplusLedger:GetPartyMemberKeystones()
+  local numGroupMembers = GetNumGroupMembers()
+  if numGroupMembers > 1 then
+    if not keystones then
+      SendChatMessage("M+ Ledger could not find any keys in this party. Go run a Mythic! Or if you feel this is an error please submit a bug.")
+    else
+      SendChatMessage("M+ Ledger found the following keys in this party:", "PARTY")
+      for _, partyMemberKeystone in pairs(keystones) do
+        local name = partyMemberKeystone.name
+        if partyMemberKeystone.mythicLevel == "0" then
+          SendChatMessage(name .. ": Does not have a key", "PARTY")
+        else
+          SendChatMessage(name .. ": +" .. partyMemberKeystone.mythicLevel .. " " .. partyMemberKeystone.dungeon, "PARTY")
+        end
+      end
+    end
+  else
+    print(ColorText:Red("You may not list a party's keys when not in a party!"))
+  end
+end
+
+local commandMapping = {
+  show = function(...)
+    MplusLedger:ToggleFrame()
+  end,
+
+  keys = function(...)
+    MplusLedger:ToggleFrame("keys")
+  end,
+
+  history = function(...)
+    MplusLedger:ToggleFrame("history")
+  end,
+
+  reset = function(...)
+    if MplusLedger:IsRunningMythicPlus() then
+      MplusLedger:EndMythicPlusAsFailed("Dungeon was intentionally reset using the /mplus reset command")
+    end
+  end,
+
+  button = function(...)
+    args = {...}
+    if args[1] == "on" or args[1] == "show" then
+      icon:Show("MplusLedger")
+    elseif args[1] == "off" or args[1] == "hide" then
+      icon:Hide("MplusLedger")
+    end
+  end,
+
+  help = function(...)
+    local commands = {
+      help = "Show this list of commands.",
+      reset = "Force the reset of your currently running dungeon.",
+      show = "Show the current dungeon for your M+ Ledger",
+      button = "(on|off|show|hide) Pass an option to show or hide the minimap button",
+      keys = "Show the keystones you ahve for your characters",
+      party = "Show in party chat what keys your party members have; party members must have M+ Ledger installed for this to function",
+      config = "Show the options for this addon"
+    }
+  
+    print(ColorText:Yellow(MplusLedger:Title() .. " v" .. MplusLedger:Version()))
+    for command, description in pairs(commands) do
+      print("/mplus " .. command .. " - " .. description)
+    end
+  end,
+
+  party = function(...)
+    MplusLedger:SendPartyKeystonesToChat()
+  end,
+
+  config = function(...)
+    AceConfigDialog:Open("M+ Ledger")
+  end
+}
+
+function MplusLedger:ProcessChatCommand(args)
+  local command, commandArg1 = self:GetArgs(args, 2)
+  local func = commandMapping[command]
+  local deprecatedCommands = {
+    keys = "Use minimap button or the chat command /mplus show.",
+    history = "Use minimap button or the chat command /mplus show.",
+    button = "Please use the addon options for this by using Blizzard's default addon UI or by right-clicking the minimap button."
+  }
+  if func then
+    func(commandArg1)
+    if deprecatedCommands[command] ~= nil then
+      print(ColorText:Red("Warning! This command is deprecated and will be removed in the next version of M+ Ledger!"))
+      print(deprecatedCommands[command])
+    end
+  else
+    print(ColorText:Red("You MUST pass something valid to the /mplus command"))
+    ShowChatCommands()
+  end
 end

@@ -175,7 +175,7 @@ local function DrawKeysTab(container)
   scrollFrame:SetLayout("Flow")
   container:AddChild(scrollFrame)
 
-  for character, stoneInfo in pairs(MplusLedger:GetCurrentKeystones()) do
+  local function DrawCharacterKeyGroup(container, character, stoneInfo)
     local characterGroup = AceGUI:Create("InlineGroup")
     characterGroup:SetRelativeWidth(1.0)
     local nameLabel = UiUtils:CreateLabel{
@@ -213,6 +213,73 @@ local function DrawKeysTab(container)
     characterGroup:AddChild(keystoneLabel)
     scrollFrame:AddChild(characterGroup)
   end
+
+  local yourKeystone = MplusLedger:GetSpecificCharacterKeystone()
+  local characterName = UnitName("player")
+  DrawCharacterKeyGroup(container, characterName, yourKeystone)
+
+  local showNoKeyCharacters = MplusLedger:GetConfig("display_no_key_characters")
+  for character, stoneInfo in pairs(MplusLedger:GetCurrentKeystones()) do
+    if character ~= characterName then
+      local shouldShowNoKeys = stoneInfo.keystone == nil and showNoKeyCharacters
+      if stoneInfo.keystone or shouldShowNoKeys then
+        DrawCharacterKeyGroup(container, character, stoneInfo)
+      end
+    end
+  end
+end
+
+local function DrawPartyKeysTab(container)
+  local scrollFrame = AceGUI:Create("ScrollFrame")
+  scrollFrame:SetLayout("Flow")
+  container:AddChild(scrollFrame)
+
+  local showNoKeyCharacters = MplusLedger:GetConfig("display_no_key_characters")
+  local keystones = MplusLedger:GetPartyMemberKeystones()
+  if MplusLedger:CountTable(keystones) == 0 then
+    local noKeystonesLabel = UiUtils:CreateLabel{
+      text = "Keys will only be shown while in a party",
+      fontSizeMultiplier = 1.5,
+      justifyH = "CENTER"
+    }
+    scrollFrame:AddChild(noKeystonesLabel)
+  else
+    for _, stoneInfo in pairs(keystones) do
+      local mythicLevel = stoneInfo.mythicLevel
+      if tonumber(mythicLevel) > 0 or showNoKeyCharacters then
+        local characterGroup = AceGUI:Create("InlineGroup")
+        characterGroup:SetRelativeWidth(1.0)
+        local nameLabel = UiUtils:CreateLabel{
+          text = UiUtils:Indent(UiUtils:ClassColoredName(stoneInfo.name, stoneInfo.classToken)), 
+          fontSizeMultiplier = 1.25
+        }
+        characterGroup:AddChild(nameLabel)
+
+        local dungeon = stoneInfo.dungeon
+        local levelText
+        if mythicLevel == "0" then
+          levelText = "No keystone"
+        else
+          levelText = "+" .. mythicLevel .. " " .. dungeon
+        end
+
+        local keystoneLabel = UiUtils:CreateLabel{
+          text = UiUtils:Indent(levelText, 2),
+          fontSizeMultiplier = 1.1
+        }
+        characterGroup:AddChild(keystoneLabel)
+        scrollFrame:AddChild(characterGroup)
+      end
+    end
+
+    local outputToChatButton = UiUtils:CreateButton{
+      text = "Output to Chat",
+      click = function()
+        MplusLedger:SendPartyKeystonesToChat()
+      end
+    }
+    scrollFrame:AddChild(outputToChatButton)
+  end
 end
 
 local function SelectedTab(container, event, tab)
@@ -224,6 +291,8 @@ local function SelectedTab(container, event, tab)
     DrawHistoryTab(container)
   elseif tab == "keys" then
     DrawKeysTab(container)
+  elseif  tab == "party_keys" then
+    DrawPartyKeysTab(container)
   end
 end
 
@@ -233,8 +302,8 @@ end)
 
 MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToShow)
   if not tabToShow then
-    tabToShow = "current_dungeon"
-  elseif tabToShow ~= "current_dungeon" and tabToShow ~= "history" and tabToShow ~= "keys" then
+    tabToShow = "keys"
+  elseif tabToShow ~= "current_dungeon" and tabToShow ~= "history" and tabToShow ~= "keys" and tabToShow ~= "party_keys" then
     error("A tab that does not exist, " .. tabToShow .. ", was asked to be shown. If you have not modified this addon's source code please submit an issue describing your problem")
   end
   
@@ -253,16 +322,20 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
 
   tabs:SetTabs({
     {
+      text = "Your Keys",
+      value = "keys"
+    },
+    {
+      text = "Party Keys",
+      value = "party_keys"
+    },
+    {
       text = "Current Dungeon",
       value = "current_dungeon"
     },
     {
       text = "History",
       value = "history"
-    },
-    {
-      text = "Your Keys",
-      value = "keys"
     }
   })
 
