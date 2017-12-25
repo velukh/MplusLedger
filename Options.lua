@@ -24,8 +24,8 @@ local optionsTable = {
     display_no_key_characters = {
       type = "toggle",
       width = "full",
-      name = "Show your characters with no keys",
-      desc = "Show or hide other characters without keys in the minimap button tooltip and the 'Your Keys' tab. This will not impact your currently logged in character.",
+      name = "Show your characters and party members with no keys",
+      desc = "Show or hide other characters and party members without keys in the minimap button tooltip and the main Ledger window. This will not impact your currently logged in character or the output of characters using the Party Keys chat functionality.",
       descStyle = "inline",
       set = function(info, val)
         MplusLedger:SetConfig(info[1], val)

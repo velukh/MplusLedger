@@ -30,6 +30,16 @@ function MplusLedgerUiUtils:CreateLabel(labelSettings)
   return label
 end
 
+function MplusLedgerUiUtils:CreateButton(buttonSettings)
+  local button = AceGUI:Create("Button")
+
+  button:SetText(buttonSettings.text)
+  button:SetDisabled(buttonSettings.disabled)
+  button:SetCallback("OnClick", buttonSettings.click)
+
+  return button
+end
+
 function MplusLedgerUiUtils:Indent(text, indentLevel)
   if not indentLevel then
     indentLevel = 1

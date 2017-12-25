@@ -44,6 +44,7 @@ function ldbPlugin.OnTooltipShow(tooltip)
   local keystones = MplusLedger:GetCurrentKeystones()
   local yourKeystone = MplusLedger:GetSpecificCharacterKeystone()
   local characterName = UnitName("player")
+  local showNoKeyCharacters = MplusLedger:GetConfig("display_no_key_characters")
   tooltip:AddLine(UiUtils:ClassColoredName(characterName, yourKeystone.classToken))
   if yourKeystone.keystone then
     tooltip:AddLine(GenerateKeystoneString(yourKeystone.keystone))
@@ -51,20 +52,22 @@ function ldbPlugin.OnTooltipShow(tooltip)
     tooltip:AddLine(UiUtils:Indent("No keystone"))
   end
 
-  tooltip:AddLine(" ")
-  tooltip:AddLine("Other Characters:")
-  tooltip:AddLine(" ")
+  local numOtherKeystones = MplusLedger:CountTable(keystones) - 1 -- the currently listed character is included here and we care about others
+  if numOtherKeystones then
+    tooltip:AddLine(" ")
+    tooltip:AddLine("Other Characters:")
+    tooltip:AddLine(" ")
 
-  local showNoKeyCharacters = MplusLedger:GetConfig("display_no_key_characters")
-  for character, stoneInfo in pairs(keystones) do
-    if characterName ~= character then
-      local shouldShowNoKeys = stoneInfo.keystone == nil and showNoKeyCharacters
-      if stoneInfo.keystone or shouldShowNoKeys then
-        tooltip:AddLine(UiUtils:ClassColoredName(character, stoneInfo.classToken))
-        if not stoneInfo.keystone then
-          tooltip:AddLine(UiUtils:Indent("No keystone"))
-        else
-          tooltip:AddLine(GenerateKeystoneString(stoneInfo.keystone))
+    for character, stoneInfo in pairs(keystones) do
+      if characterName ~= character then
+        local shouldShowNoKeys = stoneInfo.keystone == nil and showNoKeyCharacters
+        if stoneInfo.keystone or shouldShowNoKeys then
+          tooltip:AddLine(UiUtils:ClassColoredName(character, stoneInfo.classToken))
+          if not stoneInfo.keystone then
+            tooltip:AddLine(UiUtils:Indent("No keystone"))
+          else
+            tooltip:AddLine(GenerateKeystoneString(stoneInfo.keystone))
+          end
         end
       end
     end
@@ -78,15 +81,15 @@ function ldbPlugin.OnTooltipShow(tooltip)
     tooltip:AddLine("Party members:")
     tooltip:AddLine(" ")
 
-    for character, stoneInfo in pairs(partyKeystones) do
-      if characterName ~= character then
-        local shouldShowNoKeys = stoneInfo.keystone == nil and showNoKeyCharacters
-        if stoneInfo.keystone or shouldShowNoKeys then
-          tooltip:AddLine(UiUtils:ClassColoredName(character, stoneInfo.classToken))
-          if not stoneInfo.keystone then
+    for _, partyStoneInfo in pairs(partyKeystones) do
+      if characterName ~= partyStoneInfo.name then
+        local shouldShowNoKeys = partyStoneInfo.mythicLevel == "0" and showNoKeyCharacters
+        if tonumber(partyStoneInfo.mythicLevel) > 0 or shouldShowNoKeys then
+          tooltip:AddLine(UiUtils:ClassColoredName(partyStoneInfo.name, partyStoneInfo.classToken))
+          if partyStoneInfo.mythicLevel == "0" then
             tooltip:AddLine(UiUtils:Indent("No keystone"))
           else
-            tooltip:AddLine(GenerateKeystoneString(stoneInfo.keystone))
+            tooltip:AddLine(UiUtils:Indent("+" .. partyStoneInfo.mythicLevel .. " " .. partyStoneInfo.dungeon))
           end
         end
       end

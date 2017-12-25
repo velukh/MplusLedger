@@ -52,6 +52,7 @@ local cache = {
 }
 local ColorText = LibStub("MplusLedgerColorText-1.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+local icon = LibStub("LibDBIcon-1.0", true)
 
 function MplusLedger:SetConfig(key, value)
   if not self.db.realm.configOptions then
@@ -450,7 +451,7 @@ function MplusLedger:SavePartyMemberKeystone(partyMemberString)
 end
 
 function MplusLedger:ClearRemovedPartyMembers()
-  local units = {"player1", "player2", "player3", "player4"}
+  local units = {"party1", "party2", "party3", "party4"}
   local unitNames = {}
   for unit in ipairs(units) do
     local characterName = UnitName(unit)
@@ -492,6 +493,28 @@ function MplusLedger:CountTable(table)
   return count
 end
 
+function MplusLedger:SendPartyKeystonesToChat()
+  local keystones = MplusLedger:GetPartyMemberKeystones()
+  local numGroupMembers = GetNumGroupMembers()
+  if numGroupMembers > 1 then
+    if not keystones then
+      SendChatMessage("M+ Ledger could not find any keys in this party. Go run a Mythic! Or if you feel this is an error please submit a bug.")
+    else
+      SendChatMessage("M+ Ledger found the following keys in this party:", "PARTY")
+      for _, partyMemberKeystone in pairs(keystones) do
+        local name = partyMemberKeystone.name
+        if partyMemberKeystone.mythicLevel == "0" then
+          SendChatMessage(name .. ": Does not have a key", "PARTY")
+        else
+          SendChatMessage(name .. ": +" .. partyMemberKeystone.mythicLevel .. " " .. partyMemberKeystone.dungeon, "PARTY")
+        end
+      end
+    end
+  else
+    print(ColorText:Red("You may not list a party's keys when not in a party!"))
+  end
+end
+
 local commandMapping = {
   show = function(...)
     MplusLedger:ToggleFrame()
@@ -521,29 +544,24 @@ local commandMapping = {
   end,
 
   help = function(...)
-    ShowChatCommands()
+    local commands = {
+      help = "Show this list of commands.",
+      reset = "Force the reset of your currently running dungeon.",
+      show = "Show the current dungeon for your M+ Ledger",
+      button = "(on|off|show|hide) Pass an option to show or hide the minimap button",
+      keys = "Show the keystones you ahve for your characters",
+      party = "Show in party chat what keys your party members have; party members must have M+ Ledger installed for this to function",
+      config = "Show the options for this addon"
+    }
+  
+    print(ColorText:Yellow(MplusLedger:Title() .. " v" .. MplusLedger:Version()))
+    for command, description in pairs(commands) do
+      print("/mplus " .. command .. " - " .. description)
+    end
   end,
 
   party = function(...)
-    local keystones = MplusLedger:GetPartyMemberKeystones()
-    local numGroupMembers = GetNumGroupMembers()
-    if numGroupMembers > 1 then
-      if not keystones then
-        SendChatMessage("M+ Ledger could not find any keys in this party. Go run a Mythic! Or if you feel this is an error please submit a bug.")
-      else
-        SendChatMessage("M+ Ledger found the following keys in this party:", "PARTY")
-        for _, partyMemberKeystone in pairs(keystones) do
-          local name = partyMemberKeystone.name
-          if partyMemberKeystone.mythicLevel == "0" then
-            SendChatMessage(name .. ": Does not have a key", "PARTY")
-          else
-            SendChatMessage(name .. ": +" .. partyMemberKeystone.mythicLevel .. " " .. partyMemberKeystone.dungeon, "PARTY")
-          end
-        end
-      end
-    else
-      print(ColorText:Red("You may not list a party's keys when not in a party!"))
-    end
+    MplusLedger:SendPartyKeystonesToChat()
   end,
 
   config = function(...)
@@ -554,8 +572,17 @@ local commandMapping = {
 function MplusLedger:ProcessChatCommand(args)
   local command, commandArg1 = self:GetArgs(args, 2)
   local func = commandMapping[command]
+  local deprecatedCommands = {
+    keys = "Use minimap button or the chat command /mplus show.",
+    history = "Use minimap button or the chat command /mplus show.",
+    button = "Please use the addon options for this by using Blizzard's default addon UI or by right-clicking the minimap button."
+  }
   if func then
     func(commandArg1)
+    if deprecatedCommands[command] ~= nil then
+      print(ColorText:Red("Warning! This command is deprecated and will be removed in the next version of M+ Ledger!"))
+      print(deprecatedCommands[command])
+    end
   else
     print(ColorText:Red("You MUST pass something valid to the /mplus command"))
     ShowChatCommands()

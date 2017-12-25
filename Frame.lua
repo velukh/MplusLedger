@@ -233,7 +233,8 @@ local function DrawPartyKeysTab(container)
   local scrollFrame = AceGUI:Create("ScrollFrame")
   scrollFrame:SetLayout("Flow")
   container:AddChild(scrollFrame)
-  
+
+  local showNoKeyCharacters = MplusLedger:GetConfig("display_no_key_characters")
   local keystones = MplusLedger:GetPartyMemberKeystones()
   if MplusLedger:CountTable(keystones) == 0 then
     local noKeystonesLabel = UiUtils:CreateLabel{
@@ -244,24 +245,40 @@ local function DrawPartyKeysTab(container)
     scrollFrame:AddChild(noKeystonesLabel)
   else
     for _, stoneInfo in pairs(keystones) do
-      local characterGroup = AceGUI:Create("InlineGroup")
-      characterGroup:SetRelativeWidth(1.0)
-      local nameLabel = UiUtils:CreateLabel{
-        text = UiUtils:Indent(UiUtils:ClassColoredName(stoneInfo.name, stoneInfo.classToken)), 
-        fontSizeMultiplier = 1.25
-      }
-      characterGroup:AddChild(nameLabel)
-
-      local dungeon = stoneInfo.dungeon
       local mythicLevel = stoneInfo.mythicLevel
+      if tonumber(mythicLevel) > 0 or showNoKeyCharacters then
+        local characterGroup = AceGUI:Create("InlineGroup")
+        characterGroup:SetRelativeWidth(1.0)
+        local nameLabel = UiUtils:CreateLabel{
+          text = UiUtils:Indent(UiUtils:ClassColoredName(stoneInfo.name, stoneInfo.classToken)), 
+          fontSizeMultiplier = 1.25
+        }
+        characterGroup:AddChild(nameLabel)
 
-      local keystoneLabel = UiUtils:CreateLabel{
-        text = "+" .. mythicLevel .. " " .. dungeon,
-        fontSizeMultiplier = 1.1
-      }
-      characterGroup:AddChild(keystoneLabel)
-      scrollFrame:AddChild(characterGroup)
+        local dungeon = stoneInfo.dungeon
+        local levelText
+        if mythicLevel == "0" then
+          levelText = "No keystone"
+        else
+          levelText = "+" .. mythicLevel .. " " .. dungeon
+        end
+
+        local keystoneLabel = UiUtils:CreateLabel{
+          text = UiUtils:Indent(levelText, 2),
+          fontSizeMultiplier = 1.1
+        }
+        characterGroup:AddChild(keystoneLabel)
+        scrollFrame:AddChild(characterGroup)
+      end
     end
+
+    local outputToChatButton = UiUtils:CreateButton{
+      text = "Output to Chat",
+      click = function()
+        MplusLedger:SendPartyKeystonesToChat()
+      end
+    }
+    scrollFrame:AddChild(outputToChatButton)
   end
 end
 

@@ -20,6 +20,7 @@ MplusLedger:RegisterEvent(MplusLedger.Wow.Events.PlayerEnteringWorld, function()
   if numMembers == 0 then
     MplusLedger:ResetCurrentParty()
   elseif numMembers > 1 then
+    MplusLedger:ClearRemovedPartyMembers()
     MplusLedger:SendPartyYourKeystone()
     MplusLedger:CheckForPartyKeyResync()
   end
@@ -29,9 +30,10 @@ MplusLedger:RegisterEvent(MplusLedger.Wow.Events.GroupRosterUpdate, function()
   local numMembers = GetNumGroupMembers()
   if numMembers == 0 then
     MplusLedger:ResetCurrentParty()
-  elseif numMembers > 1 then
-    MplusLedger:SendPartyYourKeystone()
+  else
     MplusLedger:ClearRemovedPartyMembers()
+    MplusLedger:SendPartyYourKeystone()
+    MplusLedger:CheckForPartyKeyResync()
   end
 end)
 

@@ -26,6 +26,7 @@ Blizzard addon configuration. Currently you may set the following options:
 well as the keys your party members may have.
 - Redesigned the tooltip and 'Your Keys' tab section to always show the character you're currently 
 logged in at the top.
+- Changed the M+ Ledger minimap butto from a custom icon to the same icon used for MYthic keystones.
 
 #### Deprecated
 
