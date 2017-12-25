@@ -16,17 +16,23 @@ end)
 
 MplusLedger:RegisterEvent(MplusLedger.Wow.Events.PlayerEnteringWorld, function()
   MplusLedger:StoreKeystoneFromBags()
-end)
-
-MplusLedger:RegisterEvent(MplusLedger.Wow.Events.GroupRosterUpdate, function()
-  print("Num group members", GetNumGroupMembers())
   local numMembers = GetNumGroupMembers()
   if numMembers == 0 then
     MplusLedger:ResetCurrentParty()
   elseif numMembers > 1 then
     MplusLedger:SendPartyYourKeystone()
+    MplusLedger:CheckForPartyKeyResync()
   end
-  
+end)
+
+MplusLedger:RegisterEvent(MplusLedger.Wow.Events.GroupRosterUpdate, function()
+  local numMembers = GetNumGroupMembers()
+  if numMembers == 0 then
+    MplusLedger:ResetCurrentParty()
+  elseif numMembers > 1 then
+    MplusLedger:SendPartyYourKeystone()
+    MplusLedger:ClearRemovedPartyMembers()
+  end
 end)
 
 MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStopped, function(_, dungeon)
@@ -45,5 +51,5 @@ MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStarted, function(_, dung
 end)
 
 MplusLedger:RegisterComm("MplusLedger", function(_, message)
- MplusLedger:SavePartyMemberKeystone(message)
+  MplusLedger:ProcessAddonMessage(message)
 end)

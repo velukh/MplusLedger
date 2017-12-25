@@ -2,7 +2,7 @@
 ## Title: M+ Ledger
 ## Notes: A ledger to keep track of all your Mythic+ runs
 ## Author: velukh
-## Version: 0.6.0-dev
+## Version: 0.6.0
 ## X-Source-URL: https://github.com/velukh/MplusLedger
 ## X-Issues-URL: https://github.com/velukh/MplusLedger/issues
 
@@ -12,6 +12,7 @@ embeds.xml
 
 ColorText.lua
 Core.lua
+Options.lua
 EventListeners.lua
 UiUtils.lua
 Frame.lua
