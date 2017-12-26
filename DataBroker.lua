@@ -52,8 +52,16 @@ function ldbPlugin.OnTooltipShow(tooltip)
     tooltip:AddLine(UiUtils:Indent("No keystone"))
   end
 
-  local numOtherKeystones = MplusLedger:CountTable(keystones) - 1 -- the currently listed character is included here and we care about others
-  if numOtherKeystones then
+  local numOtherKeystones = 0
+  for character, stoneInfo in pairs(keystones) do
+    if characterName ~= character then
+      if stoneInfo.keystone ~= nil then
+        numOtherKeystones = numOtherKeystones + 1
+      end
+    end
+  end
+
+  if numOtherKeystones > 0 then
     tooltip:AddLine(" ")
     tooltip:AddLine("Other Characters:")
     tooltip:AddLine(" ")

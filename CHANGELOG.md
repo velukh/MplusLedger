@@ -4,7 +4,14 @@ This project adheres to [Semantic Versioning 2.0](http://semver.org/) (semver). 
 currently in 0.y.x development and there may be breaking changes between minor releases, 
 though we strive to limit breaking changes as much as possible.
 
-## v0.6.0 - 2017-12-??
+## v0.6.1 - 2017-12-26
+
+#### Fixed
+
+- Bug where if a user had unchecked 'Show party members and other characters with no keys' and had 
+no other characters with keys the minimap tooltip would still show the label 'Other characters:'
+
+## v0.6.0 - 2017-12-25
 
 #### Added
 
