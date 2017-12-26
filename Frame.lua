@@ -300,23 +300,7 @@ MplusLedger:RegisterMessage(MplusLedger.Events.HideMainFrame, function()
   HideFrame(frame)
 end)
 
-MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToShow)
-  if not tabToShow then
-    tabToShow = "keys"
-  elseif tabToShow ~= "current_dungeon" and tabToShow ~= "history" and tabToShow ~= "keys" and tabToShow ~= "party_keys" then
-    error("A tab that does not exist, " .. tabToShow .. ", was asked to be shown. If you have not modified this addon's source code please submit an issue describing your problem")
-  end
-  
-  MplusLedger.ShowingMainFrame = true
-  frame = AceGUI:Create("Frame")
-  frame:SetTitle(MplusLedger:Title())
-  frame:SetStatusText("v" .. MplusLedger:Version())
-  frame:SetCallback("OnClose", function(widget) 
-    HideFrame(widget)  
-  end)
-  frame:SetLayout("Fill")
-  frame:EnableResize(false)
-
+local function ShowLedger(tabToShow)
   tabs = AceGUI:Create("TabGroup")
   tabs:SetLayout("Fill")
 
@@ -342,5 +326,49 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
   tabs:SetCallback("OnGroupSelected", SelectedTab)
   tabs:SelectTab(tabToShow)
 
-  frame:AddChild(tabs)
+  MplusLedger.frame:AddChild(tabs)
+end
+
+local function ShowCompletionSplash(dungeon)
+  local statsGroup = AceGUI:Create("SimpleGroup")
+  statsGroup:SetLayout("Fill")
+  statsGroup:SetRelativeWidth(0.5)
+
+  print("we were told to show a confirmation splash with the following dungeon data")
+  for k, v in pairs(dungeon) do
+    print(k, v)
+  end
+end
+
+MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToShow, dungeon)
+  local allowedTabs = {
+    current_dungeon = true,
+    history = true,
+    keys = true,
+    party_keys = true,
+    completion_splash = true
+  }
+  if not tabToShow then
+    tabToShow = "keys"
+  end
+
+  if allowedTabs[tabToShow] == nil then
+    error("A tab that does not exist, " .. tabToShow .. ", was asked to be shown. If you have not modified this addon's source code please submit an issue describing your problem")
+  end
+  frame = AceGUI:Create("Frame")
+  frame:SetTitle(MplusLedger:Title())
+  frame:SetStatusText("v" .. MplusLedger:Version())
+  frame:SetCallback("OnClose", function(widget) 
+    HideFrame(widget)  
+  end)
+  frame:SetLayout("Fill")
+  frame:EnableResize(false)
+
+  MplusLedger.frame = frame
+  MplusLedger.ShowingMainFrame = true
+  if tabToShow ~= "completion_splash" then
+    ShowLedger(tabToShow)
+  else
+    ShowCompletionSplash(dungeon)
+  end  
 end)

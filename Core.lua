@@ -15,6 +15,26 @@ MplusLedger = LibStub("AceAddon-3.0"):NewAddon(
   "AceTimer-3.0"
 )
 
+local next = next
+local cache = {
+  title = nil,
+  version = nil,
+  dungeonInfo = {},
+  affixInfo = {}
+}
+local ColorText = LibStub("MplusLedgerColorText-1.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+local icon = LibStub("LibDBIcon-1.0", true)
+
+--[[
+CONSTANTS
+
+- Interaddon messages that we should perform some special action for
+- Internal events that the addon triggers and/or responds to
+- External WoW events that the addon responds to
+- WoW numbers used in various calculations
+
+--]]
 MplusLedger.ShowingMainFrame = false
 
 MplusLedger.CommMessages = {
@@ -43,17 +63,45 @@ MplusLedger.Wow = {
   }
 }
 
-local next = next
-local cache = {
-  title = nil,
-  version = nil,
-  dungeonInfo = {},
-  affixInfo = {}
-}
-local ColorText = LibStub("MplusLedgerColorText-1.0")
-local AceConfigDialog = LibStub("AceConfigDialog-3.0")
-local icon = LibStub("LibDBIcon-1.0", true)
+function MplusLedger:CountTable(table)
+  local count = 0
+  if type(table) == "table" then
+    for _ in pairs(table) do
+      count = count + 1
+    end
+  end
 
+  return count
+end
+
+--[[
+ACE ADDON CALLBACKS
+--]]
+function MplusLedger:OnInitialize()
+  local defaults = {}
+  self.db = LibStub("AceDB-3.0"):New("MplusLedgerDB", defaults)
+end
+
+function MplusLedger:OnEnable()
+  local ResetMythicPlusRuns = function()
+    if self:IsRunningMythicPlus() then
+      self:EndMythicPlusAsFailed("The instance was intentionally reset, likely in an effort to lower the key level.")
+    end
+    self:StoreKeystoneFromBags()
+  end
+  self:SecureHook("ResetInstances", ResetMythicPlusRuns)
+end
+
+function MplusLedger:OnDisable()
+  self:Unhook("ResetInstances")
+end
+
+--[[
+ACE CONFIG HOOKS
+
+While these are generic enough to be used for any configuration it is recommended that you only use 
+these functions for configuration options set through Ace Config.
+--]]
 function MplusLedger:SetConfig(key, value)
   if not self.db.realm.configOptions then
     self.db.realm.configOptions = {}
@@ -81,25 +129,25 @@ function MplusLedger:GetConfig(key)
   end
 end
 
-function MplusLedger:OnInitialize()
-  local defaults = {}
-  self.db = LibStub("AceDB-3.0"):New("MplusLedgerDB", defaults)
-end
+--[[
+GUI RELATED FUNCTIONS
 
-function MplusLedger:OnEnable()
-  local ResetMythicPlusRuns = function()
-    if self:IsRunningMythicPlus() then
-      self:EndMythicPlusAsFailed("The instance was intentionally reset, likely in an effort to lower the key level.")
-    end
-    self:StoreKeystoneFromBags()
+All of the functions that interact with the AceGUI frame, primarily through triggering events.
+--]]
+function MplusLedger:ToggleFrame(tabToShow)
+  if self.ShowingMainFrame then
+    self:SendMessage(self.Events.HideMainFrame)
+  else
+    self:SendMessage(self.Events.ShowMainFrame, tabToShow)
   end
-  self:SecureHook("ResetInstances", ResetMythicPlusRuns)
 end
 
-function MplusLedger:OnDisable()
-  self:Unhook("ResetInstances")
-end
+--[[
+TOC VALUE FUNCTIONS
 
+functions that abstract away retrieving values from the MplusLedger.toc file. If you ever find yourself calling 
+GetAddOnMetadata("MplusLedger", "XXX") you should create a new function to retrieve this value.
+--]]
 function MplusLedger:Title()
   if not cache.title then
     cache.title = GetAddOnMetadata("MplusLedger", "Title")
@@ -116,114 +164,12 @@ function MplusLedger:Version()
   return cache.version
 end
 
-function MplusLedger:ToggleFrame(tabToShow)
-  if self.ShowingMainFrame then
-    self:SendMessage(self.Events.HideMainFrame)
-  else
-    self:SendMessage(self.Events.ShowMainFrame, tabToShow)
-  end
-end
+--[[
+M+ STATE METHODS
 
-function MplusLedger:StartMythicPlus(challengeMapId)
-  if not challengeMapId then 
-    error("MplusLedger encountered an error attempting to start your dungeon")
-    return 
-  end
-  local level, affixes = C_ChallengeMode:GetActiveKeystoneInfo()
-
-  self.db.char.currentDungeon = {
-    state = "running",
-    challengeMapId = challengeMapId,
-    mythicLevel = level,
-    affixes = affixes,
-    startedAt = time(),
-    endedAt = nil,
-    runTime = nil,
-    party = {}
-  }
-
-  local partyUnits = {"player", "party1", "party2", "party3", "party4"}
-  for _, unitId in pairs(partyUnits) do
-    if UnitExists(unitId) then
-      local guid = UnitGUID(unitId)
-      local player, realm = UnitName(unitId)
-      local class, classToken = UnitClass(unitId)
-      local race = UnitRace(unitId)
-      local genderId = UnitSex(unitId)
-
-      table.insert(self.db.char.currentDungeon.party, {
-        guid = guid,
-        unitId = unitId,
-        name = player,
-        realm = realm,
-        race = race,
-        genderId = genderId,
-        class = class,
-        classToken = classToken,
-        deathCount = 0
-      })
-    end
-  end
-
-  self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", function(_, _, event, _, _, _, _, _, destGUID, destName, destFlags)
-    self:HandlePossiblePlayerDeath(event, destGUID, destName, destFlags)
-  end)
-  self:SendMessage(self.Events.TrackingStarted, self.db.char.currentDungeon)
-end
-
-local function storeAndResetCurrentDungeon(ledger)
-  ledger.db.char.currentDungeon.endedAt = time()
-
-  if not ledger.db.char.finishedMythicRuns then
-    ledger.db.char.finishedMythicRuns = {}
-  end
-
-  table.insert(ledger.db.char.finishedMythicRuns, ledger.db.char.currentDungeon)
-  ledger.db.char.currentDungeon = nil
-  ledger:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-end
-
-function MplusLedger:EndMythicPlusAsCompleted()
-  if not self:IsRunningMythicPlus() then return end
-
-  self.db.char.currentDungeon.state = "success"
-  local eventDungeon = self.db.char.currentDungeon
-  storeAndResetCurrentDungeon(self)
-  self:SendMessage(self.Events.TrackingStopped, eventDungeon)  
-end
-
-function MplusLedger:EndMythicPlusAsFailed(failureReason)
-  if not self:IsRunningMythicPlus() then return end
-
-  self.db.char.currentDungeon.state = "failed"
-  self.db.char.currentDungeon.failureReason = failureReason
-  local eventDungeon = self.db.char.currentDungeon
-  storeAndResetCurrentDungeon(self)
-  self:SendMessage(self.Events.TrackingStopped, eventDungeon)
-end
-
-local surrenderedSoul
-function MplusLedger:HandlePossiblePlayerDeath(event, destGUID, destName, destFlags)
-  if self:IsRunningMythicPlus() and event == "UNIT_DIED" and bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0 then
-    if not surrenderedSoul then
-      surrenderedSoul = GetSpellInfo(self.Wow.SpellIds.SurrenderedSoul)
-    end
-
-    local unitIsFeignDeath = UnitIsFeignDeath(destName)
-    local unitSurrenderedSoul = UnitDebuff(destName, surrenderedSoul) == surrenderedSoul
-
-    if not unitIsFeignDeath and not unitSurrenderedSoul then
-      for index, partyMember in pairs(self.db.char.currentDungeon.party) do
-        if partyMember.guid == destGUID then
-          local deathCount = self.db.char.currentDungeon.party[index].deathCount 
-
-          self.db.char.currentDungeon.party[index].deathCount = deathCount + 1
-        end
-      end
-    end
-  end
-end
-
+Will return the state of various M+ including the current dungeon you're running, your past runs, as well as 
+whether MplusLedger is actively tracking a run for you.
+--]]
 function MplusLedger:CurrentDungeon()
   return self.db.char.currentDungeon
 end
@@ -237,6 +183,16 @@ function MplusLedger:FinishedDungeons()
   end
 end
 
+function MplusLedger:IsRunningMythicPlus()
+  return self.db.char.currentDungeon ~= nil
+end
+
+--[[
+DUNGEON CALCULATION FUNCTIONS
+
+Will fetch or calculate various data about a dungeon; where a dungeon is a MplusLedger table stored in 
+currentDungeon or as an element in the finishedMythicRuns.
+--]]
 function MplusLedger:DungeonTotalRuntime(dungeon)
   return difftime(dungeon.endedAt or time(), dungeon.startedAt)
 end
@@ -321,10 +277,6 @@ function MplusLedger:DungeonAffixNames(dungeon)
   return affixes
 end
 
-function MplusLedger:IsRunningMythicPlus()
-  return self.db.char.currentDungeon ~= nil
-end
-
 function MplusLedger:DungeonBoostProgress(dungeon)
   if dungeon.state == "failed" then
     return -1
@@ -348,6 +300,122 @@ function MplusLedger:DungeonBoostProgress(dungeon)
   end
 end
 
+--[[
+M+ EVENT CALLBACKS
+
+These functions perform the logic for when some action is taken in a M+; whether that be the dungeon starting,
+finishing, or a player dying. If a function is called in EventListeners.lua that is performing an action and 
+not simply checking state it should be defined here.
+--]]
+function MplusLedger:StartMythicPlus(challengeMapId)
+  if not challengeMapId then 
+    error("MplusLedger encountered an error attempting to start your dungeon")
+    return 
+  end
+  local level, affixes = C_ChallengeMode:GetActiveKeystoneInfo()
+
+  self.db.char.currentDungeon = {
+    state = "running",
+    challengeMapId = challengeMapId,
+    mythicLevel = level,
+    affixes = affixes,
+    startedAt = time(),
+    endedAt = nil,
+    runTime = nil,
+    party = {}
+  }
+
+  local partyUnits = {"player", "party1", "party2", "party3", "party4"}
+  for _, unitId in pairs(partyUnits) do
+    if UnitExists(unitId) then
+      local guid = UnitGUID(unitId)
+      local player, realm = UnitName(unitId)
+      local class, classToken = UnitClass(unitId)
+      local race = UnitRace(unitId)
+      local genderId = UnitSex(unitId)
+      local guild, guildRank = GetGuildInfo(unit)
+
+      table.insert(self.db.char.currentDungeon.party, {
+        guid = guid,
+        unitId = unitId,
+        name = player,
+        realm = realm,
+        race = race,
+        genderId = genderId,
+        class = class,
+        classToken = classToken,
+        deathCount = 0,
+        guild = guild,
+        guildRank = guildRank
+      })
+    end
+  end
+
+  self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", function(_, _, event, _, _, _, _, _, destGUID, destName, destFlags)
+    self:HandlePossiblePlayerDeath(event, destGUID, destName, destFlags)
+  end)
+  self:SendMessage(self.Events.TrackingStarted, self.db.char.currentDungeon)
+end
+
+local function storeAndResetCurrentDungeon(ledger)
+  ledger.db.char.currentDungeon.endedAt = time()
+
+  if not ledger.db.char.finishedMythicRuns then
+    ledger.db.char.finishedMythicRuns = {}
+  end
+
+  table.insert(ledger.db.char.finishedMythicRuns, ledger.db.char.currentDungeon)
+  ledger.db.char.currentDungeon = nil
+  ledger:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+end
+
+function MplusLedger:EndMythicPlusAsCompleted()
+  if not self:IsRunningMythicPlus() then return end
+
+  self.db.char.currentDungeon.state = "success"
+  local eventDungeon = self.db.char.currentDungeon
+  storeAndResetCurrentDungeon(self)
+  self:SendMessage(self.Events.TrackingStopped, eventDungeon)  
+end
+
+function MplusLedger:EndMythicPlusAsFailed(failureReason)
+  if not self:IsRunningMythicPlus() then return end
+
+  self.db.char.currentDungeon.state = "failed"
+  self.db.char.currentDungeon.failureReason = failureReason
+  local eventDungeon = self.db.char.currentDungeon
+  storeAndResetCurrentDungeon(self)
+  self:SendMessage(self.Events.TrackingStopped, eventDungeon)
+end
+
+local surrenderedSoul
+function MplusLedger:HandlePossiblePlayerDeath(event, destGUID, destName, destFlags)
+  if self:IsRunningMythicPlus() and event == "UNIT_DIED" and bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) > 0 then
+    if not surrenderedSoul then
+      surrenderedSoul = GetSpellInfo(self.Wow.SpellIds.SurrenderedSoul)
+    end
+
+    local unitIsFeignDeath = UnitIsFeignDeath(destName)
+    local unitSurrenderedSoul = UnitDebuff(destName, surrenderedSoul) == surrenderedSoul
+
+    if not unitIsFeignDeath and not unitSurrenderedSoul then
+      for index, partyMember in pairs(self.db.char.currentDungeon.party) do
+        if partyMember.guid == destGUID then
+          local deathCount = self.db.char.currentDungeon.party[index].deathCount 
+
+          self.db.char.currentDungeon.party[index].deathCount = deathCount + 1
+        end
+      end
+    end
+  end
+end
+
+--[[
+M+ LEDGER KEYSTONE FUNCTIONS
+
+Everything related to gathering keystones from bags, sharing those keystones with party members, 
+and fetching the current state of a character's keystone.
+--]]
 function MplusLedger:FetchKeystoneFromBags()
   for container=BACKPACK_CONTAINER, NUM_BAG_SLOTS do
 		local slots = GetContainerNumSlots(container)
@@ -482,17 +550,6 @@ function MplusLedger:ProcessAddonMessage(message)
   end
 end
 
-function MplusLedger:CountTable(table)
-  local count = 0
-  if type(table) == "table" then
-    for _ in pairs(table) do
-      count = count + 1
-    end
-  end
-
-  return count
-end
-
 function MplusLedger:SendPartyKeystonesToChat()
   local keystones = MplusLedger:GetPartyMemberKeystones()
   local numGroupMembers = GetNumGroupMembers()
@@ -515,7 +572,16 @@ function MplusLedger:SendPartyKeystonesToChat()
   end
 end
 
+--[[
+M+ LEDGER CHAT FUNCTIONS
+
+Ensure proper handling of /mplus chat commands.
+--]]
 local commandMapping = {
+  dev = function(...)
+    MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame, "completion_splash", MplusLedger:FinishedDungeons()[1])
+  end,
+
   show = function(...)
     MplusLedger:ToggleFrame()
   end,

@@ -38,7 +38,6 @@ MplusLedger:RegisterEvent(MplusLedger.Wow.Events.GroupRosterUpdate, function()
 end)
 
 MplusLedger:RegisterEvent("CHAT_MSG_LOOT", function(event, ...)
-  print("calling this")
   local LOOT_ITEM_SELF_PATTERN = _G.LOOT_ITEM_SELF
   LOOT_ITEM_SELF_PATTERN = LOOT_ITEM_SELF_PATTERN:gsub('%%s', '(.+)')
   local LOOT_ITEM_PATTERN = _G.LOOT_ITEM

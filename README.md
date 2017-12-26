@@ -33,16 +33,3 @@ iamges with your problem and that is highly recommended. The Git Reports link is
 GitHub; if this link becomes abused or mistreated I may deactivate anonymous issue reporting altogether.  
 
 **Any issue posted on any other service will not receive feedback from the developer.**
-
-## TODOS
-
-There are many things I'd like to add to MplusLedger and plan to do so as time permits. Below is the list of items that 
-I'd like to add to the addon over time.
-
-- [ ] Drastically improve the UI to improve experience and amount of information displayed
-- [ ] Properly handle a user leaving group or disconnecting
-- [ ] Add ability to store a player and party's gear set, talents, and buffs when a M+ starts
-- [ ] Add ability to rate a dungeon run or individual player
-- [ ] Add ability to sort, filter and/or search over your MplusLedger history
-- [ ] Provide ability to export data as a JSON object
-- [ ] Add a supplemental website to upload and backup your MplusLedger data
