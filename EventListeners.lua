@@ -37,6 +37,24 @@ MplusLedger:RegisterEvent(MplusLedger.Wow.Events.GroupRosterUpdate, function()
   end
 end)
 
+MplusLedger:RegisterEvent("CHAT_MSG_LOOT", function(event, ...)
+  print("calling this")
+  local LOOT_ITEM_SELF_PATTERN = _G.LOOT_ITEM_SELF
+  LOOT_ITEM_SELF_PATTERN = LOOT_ITEM_SELF_PATTERN:gsub('%%s', '(.+)')
+  local LOOT_ITEM_PATTERN = _G.LOOT_ITEM
+  LOOT_ITEM_PATTERN = LOOT_ITEM_PATTERN:gsub('%%s', '(.+)')
+  local message, _, _, _, looter = ...
+	
+	local lootedItem = message:match(LOOT_ITEM_SELF_PATTERN)
+	if lootedItem == nil then
+		_, lootedItem = message:match(LOOT_ITEM_PATTERN)
+  end
+  
+  if lootedItem then
+    print("we got an item through chat msg", lootedItem, looter)
+  end
+end)
+
 MplusLedger:RegisterMessage(MplusLedger.Events.TrackingStopped, function(_, dungeon)
   local stateMsg
   if dungeon.state == "failed" then
