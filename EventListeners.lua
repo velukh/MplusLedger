@@ -19,7 +19,7 @@ MplusLedger:RegisterEvent(MplusLedger.Wow.Events.PlayerEnteringWorld, function()
   local numMembers = GetNumGroupMembers()
   if numMembers == 0 then
     MplusLedger:ResetCurrentParty()
-  elseif numMembers > 1 then
+  elseif numMembers > 1 and MplusLedger:IsRunningMythicPlus() then
     MplusLedger:ClearRemovedPartyMembers()
     MplusLedger:SendPartyYourKeystone()
     MplusLedger:CheckForPartyKeyResync()
@@ -50,7 +50,11 @@ MplusLedger:RegisterEvent("CHAT_MSG_LOOT", function(event, ...)
   end
   
   if lootedItem then
-    print("we got an item through chat msg", lootedItem, looter)
+    MplusLedger:StoreReceivedLoot(lootedItem, looter)
+    if MplusLedger.frame then
+      MplusLedger.frame:ReleaseChildren()
+      MplusLedger:ShowCompletionSplash(MplusLedger.completedDungeon)
+    end
   end
 end)
 

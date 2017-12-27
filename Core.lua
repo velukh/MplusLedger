@@ -74,6 +74,19 @@ function MplusLedger:CountTable(table)
   return count
 end
 
+function MplusLedger:ProcessAddonMessage(message)
+  local knownCommands = {}
+  knownCommands[self.CommMessages.ResyncKeys] = function()
+    self:SendPartyYourKeystone()
+  end
+
+  if knownCommands[message] ~= nil then
+    knownCommands[message]()
+  else
+    MplusLedger:SavePartyMemberKeystone(message)
+  end
+end
+
 --[[
 ACE ADDON CALLBACKS
 --]]
@@ -262,6 +275,40 @@ function MplusLedger:DungeonTimeLimitBoostThree(dungeon)
   end
 
   return cache.dungeonInfo[challengeMapId].timeLimitBoostThree
+end
+
+function MplusLedger:DungeonBeatBoostTimerBy(dungeon)
+  local dungeonBoostProgress = self:DungeonBoostProgress(dungeon)
+  local totalRuntime = self:DungeonTotalRuntimeWithDeaths(dungeon)
+  local boostTimer
+  if dungeonBoostProgress == 3 then
+    boostTimer = self:DungeonTimeLimitBoostThree(dungeon)
+  elseif dungeonBoostProgress == 2 then
+    boostTimer = self:DungeonTimeLimitBoostTwo(dungeon)
+  elseif dungeonBoostProgress == 1 then
+    boostTimer = self:DungeonTimeLimit(dungeon)
+  end
+
+  if boostTimer then
+    return boostTimer - totalRuntime
+  end
+end
+
+function MplusLedger:DungeonMissedBoostTimerBy(dungeon)
+  local dungeonBoostProgress = self:DungeonBoostProgress(dungeon)
+  local totalRuntime = self:DungeonTotalRuntimeWithDeaths(dungeon)
+  local boostTimer
+  if dungeonBoostProgress == 2 then
+    boostTimer = self:DungeonTimeLimitBoostThree(dungeon)
+  elseif dungeonBoostProgress == 1 then
+    boostTimer = self:DungeonTimeLimitBoostTwo(dungeon)
+  elseif dungeonBoostProgress == -1 then
+    boostTimer = self:DungeonTimeLimit(dungeon)
+  end
+
+  if boostTimer then
+    return totalRuntime - boostTimer
+  end
 end
 
 function MplusLedger:DungeonAffixNames(dungeon)
@@ -509,12 +556,13 @@ function MplusLedger:SavePartyMemberKeystone(partyMemberString)
     self.db.char.currentParty = {}
   end
 
-  self.db.char.currentParty[characterName] = {
+  self.db.char.currentParty[characterName .. "-" .. realm] = {
     name = characterName,
     realm = realm,
     classToken = classToken,
     mythicLevel = mythicLevel,
-    dungeon = dungeon
+    dungeon = dungeon,
+    loot = nil
   }
 end
 
@@ -522,8 +570,11 @@ function MplusLedger:ClearRemovedPartyMembers()
   local units = {"party1", "party2", "party3", "party4"}
   local unitNames = {}
   for unit in ipairs(units) do
-    local characterName = UnitName(unit)
-    table.insert(unitNames, characterName)
+    local characterName, realm = UnitName(unit)
+    if not realm then
+      realm = GetRealmName()
+    end
+    table.insert(unitNames, characterName .. "-" .. realm)
   end
 
   for storedCharacterName, _ in pairs(self.db.char.currentParty) do
@@ -537,19 +588,6 @@ function MplusLedger:CheckForPartyKeyResync()
   self:SendCommMessage("MplusLedger", MplusLedger.CommMessages.ResyncKeys, "PARTY")
 end
 
-function MplusLedger:ProcessAddonMessage(message)
-  local knownCommands = {}
-  knownCommands[self.CommMessages.ResyncKeys] = function()
-    self:SendPartyYourKeystone()
-  end
-
-  if knownCommands[message] ~= nil then
-    knownCommands[message]()
-  else
-    MplusLedger:SavePartyMemberKeystone(message)
-  end
-end
-
 function MplusLedger:SendPartyKeystonesToChat()
   local keystones = MplusLedger:GetPartyMemberKeystones()
   local numGroupMembers = GetNumGroupMembers()
@@ -558,18 +596,39 @@ function MplusLedger:SendPartyKeystonesToChat()
       SendChatMessage("M+ Ledger could not find any keys in this party. Go run a Mythic! Or if you feel this is an error please submit a bug.")
     else
       SendChatMessage("M+ Ledger found the following keys in this party:", "PARTY")
-      for _, partyMemberKeystone in pairs(keystones) do
+      for partyMemberKeystone in pairs(keystones) do
         local name = partyMemberKeystone.name
+        local realm
+        if partyMemberKeystone.realm ~= GetRealmName() then
+          realm = partyMemberKeystone.realm
+        end
+        local fullName = name
+        if realm then
+          fullName = fullName .. "-" .. realm
+        end
+
         if partyMemberKeystone.mythicLevel == "0" then
-          SendChatMessage(name .. ": Does not have a key", "PARTY")
+          SendChatMessage(fullName .. ": Does not have a key", "PARTY")
         else
-          SendChatMessage(name .. ": +" .. partyMemberKeystone.mythicLevel .. " " .. partyMemberKeystone.dungeon, "PARTY")
+          SendChatMessage(fullName .. ": +" .. partyMemberKeystone.mythicLevel .. " " .. partyMemberKeystone.dungeon, "PARTY")
         end
       end
     end
   else
     print(ColorText:Red("You may not list a party's keys when not in a party!"))
   end
+end
+
+function MplusLedger:CurrentLoot()
+  return self.db.char.currentLoot
+end
+
+function MplusLedger:StoreReceivedLoot(lootLink, looter)
+  if not self.db.char.currentLoot then
+    self.db.char.currentLoot = {}
+  end
+
+  table.insert(self.db.char.currentLoot, {looter = looter, lootLink = lootLink})
 end
 
 --[[
@@ -579,7 +638,12 @@ Ensure proper handling of /mplus chat commands.
 --]]
 local commandMapping = {
   dev = function(...)
-    MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame, "completion_splash", MplusLedger:FinishedDungeons()[1])
+    local finishedDungeons = MplusLedger:FinishedDungeons()
+    local dungeon = finishedDungeons[1]
+    
+    MplusLedger.completedDungeon = dungeon
+    MplusLedger.db.char.currentLoot = nil
+    MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame, "completion_splash", dungeon)
   end,
 
   show = function(...)

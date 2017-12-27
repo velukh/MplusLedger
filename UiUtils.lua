@@ -55,6 +55,9 @@ end
 
 function MplusLedgerUiUtils:FontSize(sizeMultiplier)
   _, size = GetGameFontNormal()
+  if sizeMultiplier == nil then
+    sizeMultiplier = 1
+  end
   return size * sizeMultiplier
 end
 
@@ -140,6 +143,23 @@ end
 function MplusLedgerUiUtils:DungeonTimeLimitBoostThree(dungeon)
   local timeLimit = MplusLedger:DungeonTimeLimitBoostThree(dungeon)
   return "    +3: " .. self:SecondsToClock(timeLimit, true)
+end
+
+function MplusLedgerUiUtils:DungeonBeatBoostTimerBy(dungeon)
+  local beatTimerBy = MplusLedger:DungeonBeatBoostTimerBy(dungeon)
+  local dungeonBoostProgress = MplusLedger:DungeonBoostProgress(dungeon)
+
+  return "Beat +" .. dungeonBoostProgress .. " timer by: " .. self:SecondsToClock(beatTimerBy, true)
+end
+
+function MplusLedgerUiUtils:DungeonMissedBoostTimerBy(dungeon)
+  local missedTimerBy = MplusLedger:DungeonMissedBoostTimerBy(dungeon)
+  local dungeonBoostProgress = MplusLedger:DungeonBoostProgress(dungeon)
+  if dungeonBoostProgress == -1 then
+    dungeonBoostProgress = 0
+  end
+
+  return "Missed +" .. dungeonBoostProgress + 1 .. " timer by: " .. self:SecondsToClock(missedTimerBy, true)
 end
 
 function MplusLedgerUiUtils:DungeonDeathPenalty(dungeon)

@@ -240,11 +240,12 @@ local function DrawPartyKeysTab(container)
     local noKeystonesLabel = UiUtils:CreateLabel{
       text = "Keys will only be shown while in a party",
       fontSizeMultiplier = 1.5,
-      justifyH = "CENTER"
+      justifyH = "CENTER",
+      justifyV = "CENTER"
     }
     scrollFrame:AddChild(noKeystonesLabel)
   else
-    for _, stoneInfo in pairs(keystones) do
+    for stoneInfo in pairs(keystones) do
       local mythicLevel = stoneInfo.mythicLevel
       if tonumber(mythicLevel) > 0 or showNoKeyCharacters then
         local characterGroup = AceGUI:Create("InlineGroup")
@@ -329,15 +330,126 @@ local function ShowLedger(tabToShow)
   MplusLedger.frame:AddChild(tabs)
 end
 
-local function ShowCompletionSplash(dungeon)
-  local statsGroup = AceGUI:Create("SimpleGroup")
-  statsGroup:SetLayout("Fill")
-  statsGroup:SetRelativeWidth(0.5)
+function MplusLedger:ShowCompletionSplash(dungeon)
+  local mainGroup = AceGUI:Create("SimpleGroup")
+  mainGroup:SetLayout("Flow")
+  mainGroup:SetRelativeWidth(1.0)
+  mainGroup:SetFullHeight(true)
 
-  print("we were told to show a confirmation splash with the following dungeon data")
-  for k, v in pairs(dungeon) do
-    print(k, v)
+  local dungeonName = MplusLedger:DungeonName(dungeon)
+  local dungeonBoostProgress = MplusLedger:DungeonBoostProgress(dungeon)
+
+  if dungeon.state == "success" then
+    local statsGroup = AceGUI:Create("SimpleGroup")
+    statsGroup:SetLayout("List")
+    statsGroup:SetRelativeWidth(0.5)
+
+    local lootGroup = AceGUI:Create("SimpleGroup")
+    lootGroup:SetLayout("List")
+    lootGroup:SetRelativeWidth(0.5)
+
+    local lootHeadingLabel = UiUtils:CreateLabel{
+      text = "Loot list:",
+      fontSizeMultiplier = 1.75,
+      relativeWidth = 1.0,
+      justifyH = "CENTER"
+    }
+    lootGroup:AddChild(lootHeadingLabel)
+
+    local loot = MplusLedger:CurrentLoot()
+    if loot then
+      for _, lootInfo in pairs(loot) do
+        local lootLabel = UiUtils:CreateLabel{
+          text = lootInfo.lootLink,
+          relativeWidth = 1.0,
+          fontSizeMultiplier = 1.75,
+          justifyH = "CENTER"
+        }
+        lootGroup:AddChild(lootLabel)
+      end
+    end
+
+    local headingLabel = UiUtils:CreateLabel{
+      text = "+" .. dungeon.mythicLevel .. " " .. dungeonName,
+      fontSizeMultiplier = 1.75,
+      relativeWidth = 1.0,
+      justifyH = "CENTER"
+    }
+    statsGroup:AddChild(headingLabel)
+
+    local headingSpacerLabel = UiUtils:CreateLabel{
+      text = " ",
+      relativeWidth = 1.0
+    }
+    statsGroup:AddChild(headingSpacerLabel)
+
+    local boostLabel = UiUtils:CreateLabel{
+      text = UiUtils:DungeonBoostProgress(dungeon),
+      fontSizeMultiplier = 3.75,
+      relativeWidth = 1.0,
+      justifyH = "CENTER"
+    }
+    statsGroup:AddChild(boostLabel)
+
+    local boostSpacerLabel = UiUtils:CreateLabel{
+      text = " ",
+      relativeWidth = 1.0
+    }
+    statsGroup:AddChild(boostSpacerLabel)
+
+    local totalRuntimeLabel = UiUtils:CreateLabel{
+      text = UiUtils:DungeonTotalRuntimeWithDeaths(dungeon),
+      relativeWidth = 1.0,
+      fontSizeMultiplier = 1.25,
+      justifyH = "LEFT"
+    }
+    statsGroup:AddChild(totalRuntimeLabel)
+
+    local beatTimerBy = MplusLedger:DungeonBeatBoostTimerBy(dungeon)
+    if beatTimerBy then
+      local beatTimerByLabel = UiUtils:CreateLabel{
+        text = UiUtils:DungeonBeatBoostTimerBy(dungeon),
+        relativeWidth = 1.0,
+        fontSizeMultiplier = 1.25,
+        justifyH = "LEFT"
+      }
+      statsGroup:AddChild(beatTimerByLabel)
+    end
+
+    local missedTimerBy = MplusLedger:DungeonMissedBoostTimerBy(dungeon)    
+    if missedTimerBy then
+      local missedTimerByLabel = UiUtils:CreateLabel{
+        text = UiUtils:DungeonMissedBoostTimerBy(dungeon),
+        relativeWidth = 1.0,
+        fontSizeMultiplier = 1.25,
+        justifyH = "LEFT"
+      }
+      statsGroup:AddChild(missedTimerByLabel)  
+    end
+
+    local missedTimerSpacerLabel = UiUtils:CreateLabel{
+      text = " ",
+      relativeWidth = 1.0
+    }
+    statsGroup:AddChild(missedTimerSpacerLabel)
+
+    local partyLabel = UiUtils:CreateLabel{
+      text = "Party members:",
+      relativeWidth = 1.0,
+      fontSizeMultiplier = 1.5,
+      justifyH = "LEFT"
+    }
+    statsGroup:AddChild(partyLabel)
+
+    for _, partyMember in pairs(dungeon.party) do
+      AddPartyMemberLabelsToContainer(statsGroup, partyMember)
+    end
+
+    mainGroup:AddChild(statsGroup)
+    mainGroup:AddChild(lootGroup)
   end
+
+  MplusLedger.frame:AddChild(mainGroup)
 end
 
 MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToShow, dungeon)
@@ -355,7 +467,7 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
   if allowedTabs[tabToShow] == nil then
     error("A tab that does not exist, " .. tabToShow .. ", was asked to be shown. If you have not modified this addon's source code please submit an issue describing your problem")
   end
-  frame = AceGUI:Create("Frame")
+  frame = AceGUI:Create("Window")
   frame:SetTitle(MplusLedger:Title())
   frame:SetStatusText("v" .. MplusLedger:Version())
   frame:SetCallback("OnClose", function(widget) 
@@ -369,6 +481,6 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
   if tabToShow ~= "completion_splash" then
     ShowLedger(tabToShow)
   else
-    ShowCompletionSplash(dungeon)
+    MplusLedger:ShowCompletionSplash(dungeon)
   end  
 end)
