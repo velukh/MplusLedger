@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning 2.0](http://semver.org/) (semver). 
 currently in 0.y.x development and there may be breaking changes between minor releases, 
 though we strive to limit breaking changes as much as possible.
 
+## v0.6.2 - 2017-12-27
+
+#### Fixed
+
+- Bug where being in a raid could cause erroneous errors trying to parse out party member's keys.
+
 ## v0.6.1 - 2017-12-26
 
 #### Fixed
