@@ -13,18 +13,29 @@ local function GetGameFontNormal()
 end
 
 function MplusLedgerUiUtils:CreateLabel(labelSettings)
-  local label = AceGUI:Create("Label")
+  local label
+  if not labelSettings.interactive then
+    label = AceGUI:Create("Label")
+  else
+    label = AceGUI:Create("InteractiveLabel")
+  end
 
   if not labelSettings.relativeWidth then
     labelSettings.relativeWidth = 1.0
   end
 
+  local fontAndIconSize = self:FontSize(labelSettings.fontSizeMultiplier)
   label:SetText(labelSettings.text)
   label:SetRelativeWidth(labelSettings.relativeWidth)
-  label:SetFont(self:Font(), self:FontSize(labelSettings.fontSizeMultiplier), self:FontFlags())
+  label:SetFont(self:Font(), fontAndIconSize , self:FontFlags())
 
   if labelSettings.justifyH then
     label:SetJustifyH(labelSettings.justifyH)
+  end
+
+  if labelSettings.image then
+    label:SetImage(labelSettings.image)
+    label:SetImageSize(fontAndIconSize, fontAndIconSize)
   end
 
   return label

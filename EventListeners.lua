@@ -51,9 +51,9 @@ MplusLedger:RegisterEvent("CHAT_MSG_LOOT", function(event, ...)
   
   if lootedItem then
     MplusLedger:StoreReceivedLoot(lootedItem, looter)
-    if MplusLedger.frame then
-      MplusLedger.frame:ReleaseChildren()
-      MplusLedger:ShowCompletionSplash(MplusLedger.completedDungeon)
+    if MplusLedger.lootGroup then
+      MplusLedger.lootGroup:ReleaseChildren()
+      MplusLedger:DrawLootedItems(MplusLedger.completedDungeon)
     end
   end
 end)

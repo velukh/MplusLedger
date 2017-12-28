@@ -639,10 +639,16 @@ Ensure proper handling of /mplus chat commands.
 local commandMapping = {
   dev = function(...)
     local finishedDungeons = MplusLedger:FinishedDungeons()
-    local dungeon = finishedDungeons[1]
+    local dungeon
+
+    for _, completedDungeon in pairs(finishedDungeons) do
+      if MplusLedger:DungeonBoostProgress(completedDungeon) == -1 then
+        dungeon = completedDungeon
+      end
+    end
     
     MplusLedger.completedDungeon = dungeon
-    MplusLedger.db.char.currentLoot = nil
+    --MplusLedger.db.char.currentLoot = nil
     MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame, "completion_splash", dungeon)
   end,
 

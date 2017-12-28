@@ -330,8 +330,61 @@ local function ShowLedger(tabToShow)
   MplusLedger.frame:AddChild(tabs)
 end
 
+function MplusLedger:DrawLootedItems(dungeon)
+  local lootGroup = MplusLedger.lootGroup
+
+  local loot = MplusLedger:CurrentLoot()
+  if loot then
+    for _, lootInfo in pairs(loot) do
+      local name, _, quality, ilvl, _, _, _, _, _, texture = GetItemInfo(lootInfo.lootLink)
+      local looterLabel = UiUtils:CreateLabel{
+        text = lootInfo.looter,
+        relativeWidth = 1.0,
+        fontSizeMultiplier = 1.25,
+        justifyH = "LEFT"
+      }
+      lootGroup:AddChild(looterLabel)
+
+      local lootLabel = UiUtils:CreateLabel{
+        text = ColorText:FromItemQuality(name, quality),
+        relativeWidth = 1.0,
+        fontSizeMultiplier = 1.75,
+        justifyH = "LEFT",
+        image = texture,
+        interactive = true
+      }
+      
+      lootLabel:SetCallback("OnEnter", function()
+        MplusLedger.tooltip:SetOwner(lootLabel.frame)
+        MplusLedger.tooltip:SetHyperlink(lootInfo.lootLink)
+        MplusLedger.tooltip:SetPoint("BOTTOMRIGHT", lootLabel.frame, "BOTTOMRIGHT")
+      end)
+      lootLabel:SetCallback("OnLeave", function()
+        MplusLedger.tooltip:Hide()
+      end)
+      
+      lootGroup:AddChild(lootLabel)
+
+      local ilvlLabel = UiUtils:CreateLabel{
+        text = UiUtils:Indent("Item level " .. ilvl),
+        relativeWidth = 1.0,
+        fontSizeMultiplier = 1.25,
+        justifyH = "LEFT"
+      }
+      lootGroup:AddChild(ilvlLabel)
+
+      local spacerLabel = UiUtils:CreateLabel{
+        text = " ",
+        relativeWidth = 1.0,
+        height = 15
+      }
+      lootGroup:AddChild(spacerLabel)
+    end
+  end
+end
+
 function MplusLedger:ShowCompletionSplash(dungeon)
-  local mainGroup = AceGUI:Create("SimpleGroup")
+  local mainGroup = AceGUI:Create("ScrollFrame")
   mainGroup:SetLayout("Flow")
   mainGroup:SetRelativeWidth(1.0)
   mainGroup:SetFullHeight(true)
@@ -340,62 +393,41 @@ function MplusLedger:ShowCompletionSplash(dungeon)
   local dungeonBoostProgress = MplusLedger:DungeonBoostProgress(dungeon)
 
   if dungeon.state == "success" then
-    local statsGroup = AceGUI:Create("SimpleGroup")
-    statsGroup:SetLayout("List")
-    statsGroup:SetRelativeWidth(0.5)
-
-    local lootGroup = AceGUI:Create("SimpleGroup")
-    lootGroup:SetLayout("List")
-    lootGroup:SetRelativeWidth(0.5)
-
-    local lootHeadingLabel = UiUtils:CreateLabel{
-      text = "Loot list:",
-      fontSizeMultiplier = 1.75,
-      relativeWidth = 1.0,
-      justifyH = "CENTER"
-    }
-    lootGroup:AddChild(lootHeadingLabel)
-
-    local loot = MplusLedger:CurrentLoot()
-    if loot then
-      for _, lootInfo in pairs(loot) do
-        local lootLabel = UiUtils:CreateLabel{
-          text = lootInfo.lootLink,
-          relativeWidth = 1.0,
-          fontSizeMultiplier = 1.75,
-          justifyH = "CENTER"
-        }
-        lootGroup:AddChild(lootLabel)
-      end
-    end
-
     local headingLabel = UiUtils:CreateLabel{
       text = "+" .. dungeon.mythicLevel .. " " .. dungeonName,
       fontSizeMultiplier = 1.75,
       relativeWidth = 1.0,
       justifyH = "CENTER"
     }
-    statsGroup:AddChild(headingLabel)
+    mainGroup:AddChild(headingLabel)
 
     local headingSpacerLabel = UiUtils:CreateLabel{
       text = " ",
       relativeWidth = 1.0
     }
-    statsGroup:AddChild(headingSpacerLabel)
+    mainGroup:AddChild(headingSpacerLabel)
+
+    local boostText
+    local newKeyLevel = tonumber(dungeon.mythicLevel) + dungeonBoostProgress
+    if dungeonBoostProgress > 0 then      
+      boostText = "Pushed key to " .. ColorText:Green("+" .. newKeyLevel) 
+    else
+      boostText = "Depleted key to " .. ColorText:Red("-" .. newKeyLevel)
+    end
 
     local boostLabel = UiUtils:CreateLabel{
-      text = UiUtils:DungeonBoostProgress(dungeon),
-      fontSizeMultiplier = 3.75,
+      text = boostText,
+      fontSizeMultiplier = 3.25,
       relativeWidth = 1.0,
       justifyH = "CENTER"
     }
-    statsGroup:AddChild(boostLabel)
+    mainGroup:AddChild(boostLabel)
 
     local boostSpacerLabel = UiUtils:CreateLabel{
       text = " ",
       relativeWidth = 1.0
     }
-    statsGroup:AddChild(boostSpacerLabel)
+    mainGroup:AddChild(boostSpacerLabel)
 
     local totalRuntimeLabel = UiUtils:CreateLabel{
       text = UiUtils:DungeonTotalRuntimeWithDeaths(dungeon),
@@ -403,7 +435,7 @@ function MplusLedger:ShowCompletionSplash(dungeon)
       fontSizeMultiplier = 1.25,
       justifyH = "LEFT"
     }
-    statsGroup:AddChild(totalRuntimeLabel)
+    mainGroup:AddChild(totalRuntimeLabel)
 
     local beatTimerBy = MplusLedger:DungeonBeatBoostTimerBy(dungeon)
     if beatTimerBy then
@@ -413,7 +445,7 @@ function MplusLedger:ShowCompletionSplash(dungeon)
         fontSizeMultiplier = 1.25,
         justifyH = "LEFT"
       }
-      statsGroup:AddChild(beatTimerByLabel)
+      mainGroup:AddChild(beatTimerByLabel)
     end
 
     local missedTimerBy = MplusLedger:DungeonMissedBoostTimerBy(dungeon)    
@@ -424,29 +456,32 @@ function MplusLedger:ShowCompletionSplash(dungeon)
         fontSizeMultiplier = 1.25,
         justifyH = "LEFT"
       }
-      statsGroup:AddChild(missedTimerByLabel)  
+      mainGroup:AddChild(missedTimerByLabel)  
     end
 
     local missedTimerSpacerLabel = UiUtils:CreateLabel{
       text = " ",
       relativeWidth = 1.0
     }
-    statsGroup:AddChild(missedTimerSpacerLabel)
 
-    local partyLabel = UiUtils:CreateLabel{
-      text = "Party members:",
-      relativeWidth = 1.0,
-      fontSizeMultiplier = 1.5,
-      justifyH = "LEFT"
-    }
-    statsGroup:AddChild(partyLabel)
+    local lootGroup = AceGUI:Create("SimpleGroup")
+    lootGroup:SetLayout("List")
+    lootGroup:SetRelativeWidth(1.0)
 
-    for _, partyMember in pairs(dungeon.party) do
-      AddPartyMemberLabelsToContainer(statsGroup, partyMember)
-    end
+    MplusLedger.lootGroup = lootGroup
+    MplusLedger:DrawLootedItems(dungeon)
 
-    mainGroup:AddChild(statsGroup)
+    mainGroup:AddChild(missedTimerSpacerLabel)
     mainGroup:AddChild(lootGroup)
+
+    local okButton = UiUtils:CreateButton{
+      text = "More Details",
+      click = function()
+        MplusLedger.frame:Hide()
+        MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame, 'history')
+      end
+    }
+    mainGroup:AddChild(okButton)
   end
 
   MplusLedger.frame:AddChild(mainGroup)
@@ -478,9 +513,16 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
 
   MplusLedger.frame = frame
   MplusLedger.ShowingMainFrame = true
+
+  local MplusLedgerTooltip = CreateFrame("GameTooltip", "MplusLedgerTooltip", nil, "GameTooltipTemplate")
+  
+  MplusLedger.tooltip = MplusLedgerTooltip
+
   if tabToShow ~= "completion_splash" then
+    frame:SetWidth(700)
     ShowLedger(tabToShow)
   else
+    frame:SetWidth(350)
     MplusLedger:ShowCompletionSplash(dungeon)
   end  
 end)
