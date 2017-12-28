@@ -35,15 +35,20 @@ CONSTANTS
 - WoW numbers used in various calculations
 
 --]]
-MplusLedger.ShowingMainFrame = false
+MplusLedger.ShowingLedgerFrame = false
+MplusLedger.ShowingCompletionFrame = false
+MplusLedger.Frames = {
+  LedgerFrame = "ledger",
+  CompletionFrame = "completion_splash"
+}
 
 MplusLedger.CommMessages = {
   ResyncKeys = "RESYNC_KEYS"
 }
 
 MplusLedger.Events = {
-  ShowMainFrame = "MPLUS_SHOW_MAIN_FRAME",
-  HideMainFrame = "MPLUS_HIDE_MAIN_FRAME",
+  ShowFrame = "MPLUS_SHOW_FRAME",
+  HideFrame = "MPLUS_HIDE_FRAME",
 
   TrackingStarted = "MPLUS_TRACKING_STARTED",
   TrackingStopped = "MPLUS_TRACKING_STOPPED"
@@ -147,11 +152,19 @@ GUI RELATED FUNCTIONS
 
 All of the functions that interact with the AceGUI frame, primarily through triggering events.
 --]]
-function MplusLedger:ToggleFrame(tabToShow)
-  if self.ShowingMainFrame then
-    self:SendMessage(self.Events.HideMainFrame)
-  else
-    self:SendMessage(self.Events.ShowMainFrame, tabToShow)
+function MplusLedger:ToggleFrame(frameToShow, auxData)
+  if frameToShow == self.Frames.LedgerFrame then
+    if self.ShowingLedgerFrame then
+      self:SendMessage(self.Events.HideFrame)
+    else
+      self:SendMessage(self.Events.ShowFrame, frameToShow, auxData)
+    end
+  elseif frameToShow == self.Frames.CompletionFrame then
+    if self.ShowingCompletionFrame then
+      self:SendMessage(self.Events.HideFrame)
+    else
+      self:SendMessage(self.Events.ShowFrame, frameToShow, auxData)
+    end
   end
 end
 
@@ -639,29 +652,30 @@ Ensure proper handling of /mplus chat commands.
 local commandMapping = {
   dev = function(...)
     local finishedDungeons = MplusLedger:FinishedDungeons()
-    local dungeon
+    local dungeon 
 
     for _, completedDungeon in pairs(finishedDungeons) do
-      if MplusLedger:DungeonBoostProgress(completedDungeon) == -1 then
+      if MplusLedger:DungeonBoostProgress(completedDungeon) == 2 then
         dungeon = completedDungeon
+        break
       end
     end
     
     MplusLedger.completedDungeon = dungeon
     --MplusLedger.db.char.currentLoot = nil
-    MplusLedger:SendMessage(MplusLedger.Events.ShowMainFrame, "completion_splash", dungeon)
+    MplusLedger:SendMessage(MplusLedger.Events.ShowFrame, MplusLedger.Frames.CompletionFrame, dungeon)
   end,
 
   show = function(...)
-    MplusLedger:ToggleFrame()
+    MplusLedger:ToggleFrame(MplusLedger.Frames.LedgerFrame)
   end,
 
   keys = function(...)
-    MplusLedger:ToggleFrame("keys")
+    MplusLedger:ToggleFrame(MplusLedger.Frames.LedgerFrame, "keys")
   end,
 
   history = function(...)
-    MplusLedger:ToggleFrame("history")
+    MplusLedger:ToggleFrame(MplusLedger.Frames.LedgerFrame, "history")
   end,
 
   reset = function(...)

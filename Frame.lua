@@ -7,11 +7,7 @@ local selectedTab
 local ColorText = LibStub("MplusLedgerColorText-1.0")
 local UiUtils = LibStub("MplusLedgerUiUtils-1.0")
 
-local HideFrame = function(widget)
-  AceGUI:Release(widget) 
-  MplusLedger.ShowingMainFrame = false
-  selectedTab = nil
-end
+
 
 local function AddPartyMemberLabelsToContainer(container, partyMember)   
   local nameLabel = UiUtils:CreateLabel{
@@ -297,9 +293,7 @@ local function SelectedTab(container, event, tab)
   end
 end
 
-MplusLedger:RegisterMessage(MplusLedger.Events.HideMainFrame, function()
-  HideFrame(frame)
-end)
+
 
 local function ShowLedger(tabToShow)
   tabs = AceGUI:Create("TabGroup")
@@ -487,21 +481,104 @@ function MplusLedger:ShowCompletionSplash(dungeon)
   MplusLedger.frame:AddChild(mainGroup)
 end
 
-MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToShow, dungeon)
-  local allowedTabs = {
-    current_dungeon = true,
-    history = true,
-    keys = true,
-    party_keys = true,
-    completion_splash = true
-  }
-  if not tabToShow then
-    tabToShow = "keys"
+function MplusLedger:ShowCompletionSplash(dungeon)
+  local mainGroup = AceGUI:Create("SimpleGroup")
+  mainGroup:SetLayout("Flow")
+  mainGroup:SetRelativeWidth(1.0)
+  mainGroup:SetFullHeight(true)
+
+  local dungeonName = MplusLedger:DungeonName(dungeon)
+  local dungeonBoostProgress = MplusLedger:DungeonBoostProgress(dungeon)
+
+  if dungeon.state == "success" then
+    local lootGroup = AceGUI:Create("SimpleGroup")
+    lootGroup:SetLayout("List")
+    lootGroup:SetRelativeWidth(1.0)
+
+    MplusLedger.lootGroup = lootGroup
+    MplusLedger:DrawLootedItems()
+
+    local headingLabel = UiUtils:CreateLabel{
+      text = "+" .. dungeon.mythicLevel .. " " .. dungeonName,
+      fontSizeMultiplier = 1.75,
+      relativeWidth = 1.0,
+      justifyH = "CENTER"
+    }
+    mainGroup:AddChild(headingLabel)
+
+    local headingSpacerLabel = UiUtils:CreateLabel{
+      text = " ",
+      relativeWidth = 1.0,
+      height = 10
+    }
+    mainGroup:AddChild(headingSpacerLabel)
+
+    local boostLabel = UiUtils:CreateLabel{
+      text = UiUtils:DungeonBoostProgress(dungeon),
+      fontSizeMultiplier = 2.75,
+      relativeWidth = 1.0,
+      justifyH = "CENTER"
+    }
+    mainGroup:AddChild(boostLabel)
+
+    local boostSpacerLabel = UiUtils:CreateLabel{
+      text = " ",
+      relativeWidth = 1.0
+    }
+    mainGroup:AddChild(boostSpacerLabel)
+
+    local totalRuntimeLabel = UiUtils:CreateLabel{
+      text = UiUtils:Indent(UiUtils:DungeonTotalRuntimeWithDeaths(dungeon)),
+      relativeWidth = 1.0,
+      fontSizeMultiplier = 1.25,
+      justifyH = "LEFT"
+    }
+    mainGroup:AddChild(totalRuntimeLabel)
+
+    local beatTimerBy = MplusLedger:DungeonBeatBoostTimerBy(dungeon)
+    if beatTimerBy then
+      local beatTimerByLabel = UiUtils:CreateLabel{
+        text = UiUtils:Indent(UiUtils:DungeonBeatBoostTimerBy(dungeon)),
+        relativeWidth = 1.0,
+        fontSizeMultiplier = 1.25,
+        justifyH = "LEFT"
+      }
+      mainGroup:AddChild(beatTimerByLabel)
+    end
+
+    local missedTimerBy = MplusLedger:DungeonMissedBoostTimerBy(dungeon)    
+    if missedTimerBy then
+      local missedTimerByLabel = UiUtils:CreateLabel{
+        text = UiUtils:Indent(UiUtils:DungeonMissedBoostTimerBy(dungeon)),
+        relativeWidth = 1.0,
+        fontSizeMultiplier = 1.25,
+        justifyH = "LEFT"
+      }
+      mainGroup:AddChild(missedTimerByLabel)  
+    end
+
+    local missedTimerSpacerLabel = UiUtils:CreateLabel{
+      text = " ",
+      relativeWidth = 1.0
+    }
+    mainGroup:AddChild(missedTimerSpacerLabel)
   end
 
-  if allowedTabs[tabToShow] == nil then
-    error("A tab that does not exist, " .. tabToShow .. ", was asked to be shown. If you have not modified this addon's source code please submit an issue describing your problem")
-  end
+  MplusLedger.frame:AddChild(mainGroup)
+end
+
+local HideFrame = function(widget)
+  AceGUI:Release(widget) 
+  MplusLedger.ShowingLedgerFrame = false
+  MplusLedger.ShowingCompletionFrame = false
+  selectedTab = nil
+end
+
+MplusLedger:RegisterMessage(MplusLedger.Events.HideFrame, function()
+  HideFrame(frame)
+end)
+
+local ShowFrame = function(panelToShow, auxData)
   frame = AceGUI:Create("Window")
   frame:SetTitle(MplusLedger:Title())
   frame:SetStatusText("v" .. MplusLedger:Version())
@@ -512,17 +589,33 @@ MplusLedger:RegisterMessage(MplusLedger.Events.ShowMainFrame, function(_, tabToS
   frame:EnableResize(false)
 
   MplusLedger.frame = frame
-  MplusLedger.ShowingMainFrame = true
-
-  local MplusLedgerTooltip = CreateFrame("GameTooltip", "MplusLedgerTooltip", nil, "GameTooltipTemplate")
   
-  MplusLedger.tooltip = MplusLedgerTooltip
+  if panelToShow ~= "completion_splash" then
+    local allowedTabs = {
+      current_dungeon = true,
+      history = true,
+      keys = true,
+      party_keys = true,
+      completion_splash = true
+    }
+    if not auxData then
+      auxData = "keys"
+    end
+  
+    if allowedTabs[auxData] == nil then
+      error("A tab that does not exist, " .. auxData .. ", was asked to be shown. If you have not modified this addon's source code please submit an issue describing your problem")
+    end
 
-  if tabToShow ~= "completion_splash" then
+    MplusLedger.ShowingLedgerFrame = true
     frame:SetWidth(700)
-    ShowLedger(tabToShow)
+    ShowLedger(auxData)
   else
+    MplusLedger.ShowingCompletionFrame = true
     frame:SetWidth(350)
-    MplusLedger:ShowCompletionSplash(dungeon)
+    MplusLedger:ShowCompletionSplash(auxData)
   end  
+end
+
+MplusLedger:RegisterMessage(MplusLedger.Events.ShowFrame, function(_, panelToShow, auxData)
+  ShowFrame(panelToShow, auxData)
 end)

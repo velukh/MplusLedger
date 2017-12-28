@@ -13,7 +13,7 @@ function ldbPlugin.OnClick(self, button)
   if button == "RightButton" then
     AceConfigDialog:Open("M+ Ledger")
   else
-    MplusLedger:ToggleFrame()
+    MplusLedger:ToggleFrame(MplusLedger.Frames.LedgerFrame)
   end
 end
 
