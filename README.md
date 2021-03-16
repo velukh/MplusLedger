@@ -3,9 +3,7 @@
 <img src="https://img.shields.io/badge/wow-7.3-brightgreen.svg" alt="Up to date with WoW 7.3 Legion" />
 <img src="https://img.shields.io/badge/version-0.3.1-blue.svg" alt="Addon on version 0.2.0" />
 
-> This addon is currently under active development and is in Alpha stage testing. You will likely encounter bugs, 
-> particularly in the UI as it is has not been fully designed or implemented. If you install this addon in its 
-> current stage please ensure that you review the TESTING.md document.
+**This addon is not currently under development. Please check out Astral Keys for keeping up with the keystones in your guild and friends list!**
 
 A World of Warcraft addon to help you track and analyze data about your Mythic+ runs. After you install the addon you can 
 run the command `/mplus show` to see the ledger detailing information about your past M+ runs and your current M+, 
